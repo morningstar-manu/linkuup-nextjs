@@ -4,7 +4,7 @@ let MONGODB_URI = process.env.MONGO_URL || 'mongodb://localhost:27017/linkuup_ne
 
 // S'assurer que l'URL MongoDB contient un nom de base (ex: ...mongodb.net/linkuup)
 if (MONGODB_URI && (MONGODB_URI.endsWith('.net/') || MONGODB_URI.endsWith('.com/'))) {
-  MONGODB_URI = MONGODB_URI + 'linkuup_nextjs';
+  MONGODB_URI;
 }
 
 if (!MONGODB_URI) {
