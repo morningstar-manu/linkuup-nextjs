@@ -60,20 +60,20 @@ export function AppointmentList({ refreshTrigger }: AppointmentListProps) {
 
   return (
     <div>
-      <div className="border-b border-zinc-800 px-6 py-4">
+      <div className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
         <input
           type="month"
           min="2023-01"
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
-          className="input-base max-w-[200px]"
+          className="block rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-emerald-500"
         />
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-zinc-800 bg-zinc-900/50">
+            <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
                 #
               </th>
@@ -100,33 +100,33 @@ export function AppointmentList({ refreshTrigger }: AppointmentListProps) {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-800">
+          <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
             {appointments.map((apt: { _id: string; createdAt?: string; name: string; phone_1?: string; phone_2?: string; address?: string; date: string; time: string; commercial: string; status: string }, index: number) => (
               <tr
                 key={apt._id}
-                className="table-row-hover"
+                className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
               >
                 <td className="px-6 py-4 text-zinc-500">
                   {index + 1}
                 </td>
-                <td className="px-6 py-4 text-zinc-400">
+                <td className="px-6 py-4 text-zinc-600 dark:text-zinc-400">
                   {dayjs(apt.createdAt).format('DD/MM')}
                 </td>
-                <td className="px-6 py-4 font-medium text-zinc-100">
+                <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">
                   {apt.name.toUpperCase()}
                 </td>
-                <td className="px-6 py-4 text-zinc-400">
+                <td className="px-6 py-4 text-zinc-600 dark:text-zinc-400">
                   {apt.phone_1 && apt.phone_2
                     ? `${apt.phone_1} / ${apt.phone_2}`
                     : apt.phone_1 || apt.phone_2}
                 </td>
-                <td className="max-w-[120px] truncate px-6 py-4 text-zinc-400">
+                <td className="max-w-[120px] truncate px-6 py-4 text-zinc-600 dark:text-zinc-400">
                   {apt.address?.toLowerCase()}
                 </td>
-                <td className="px-6 py-4 text-zinc-300">
+                <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">
                   {dayjs(apt.date).format('DD/MM/YY')}, {apt.time}
                 </td>
-                <td className="px-6 py-4 text-zinc-400">
+                <td className="px-6 py-4 text-zinc-600 dark:text-zinc-400">
                   {formatCommercialName(apt.commercial)}
                 </td>
                 <td className="px-6 py-4">
@@ -141,7 +141,7 @@ export function AppointmentList({ refreshTrigger }: AppointmentListProps) {
       </div>
 
       {isError && (
-        <div className="m-6 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-4 text-red-400">
+        <div className="m-6 rounded-lg border border-red-200 bg-red-50 px-4 py-4 text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
           <p className="font-medium">Erreur de chargement</p>
           <p className="mt-1 text-sm opacity-80">{getErrorMessage(error)}</p>
         </div>

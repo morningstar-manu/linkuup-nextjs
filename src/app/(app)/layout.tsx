@@ -47,7 +47,7 @@ export default function AppLayout({
   }, [isLogged, roles, pathname, router]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-grid-pattern">
+    <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
       <Navbar />
       <main className="mx-auto flex-1 w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {children}

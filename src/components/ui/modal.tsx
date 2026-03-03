@@ -47,7 +47,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'lg' }: ModalPr
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm dark:bg-black/70"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -56,22 +56,23 @@ export function Modal({ isOpen, onClose, title, children, size = 'lg' }: ModalPr
       <div
         className={`
           relative w-full ${sizeStyles[size]} max-h-[90vh] overflow-hidden
-          rounded-xl border border-zinc-800 bg-zinc-900 shadow-2xl
+          rounded-xl border border-zinc-200 bg-white shadow-2xl
+          dark:border-zinc-800 dark:bg-zinc-900
           anim-slide-up
         `}
       >
         {title && (
-          <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
+          <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
             <h2
               id="modal-title"
-              className="text-lg font-semibold text-zinc-100"
+              className="text-lg font-semibold text-zinc-900 dark:text-zinc-100"
             >
               {title}
             </h2>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+              className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
               aria-label="Fermer"
             >
               <svg
@@ -125,8 +126,8 @@ export function ConfirmModal({
         <div
           className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${
             variant === 'danger'
-              ? 'bg-red-500/10 text-red-500'
-              : 'bg-amber-500/10 text-amber-500'
+              ? 'bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-500'
+              : 'bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-500'
           }`}
         >
           <svg
@@ -143,10 +144,10 @@ export function ConfirmModal({
             />
           </svg>
         </div>
-        <h3 className="mb-2 text-lg font-semibold text-zinc-100">
+        <h3 className="mb-2 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
           {title}
         </h3>
-        <p className="mb-6 text-sm text-zinc-400">
+        <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">
           {message}
         </p>
         <div className="flex justify-center gap-3">
@@ -154,7 +155,7 @@ export function ConfirmModal({
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-700"
+            className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
           >
             {cancelLabel}
           </button>

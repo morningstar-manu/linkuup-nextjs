@@ -13,24 +13,24 @@ interface StatCardProps {
 
 const variantStyles = {
   default: {
-    icon: 'bg-zinc-800 text-zinc-400',
-    border: 'border-zinc-800',
+    icon: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400',
+    border: 'border-zinc-200 dark:border-zinc-800',
   },
   success: {
-    icon: 'bg-emerald-500/10 text-emerald-500',
-    border: 'border-emerald-500/20',
+    icon: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-500',
+    border: 'border-emerald-200 dark:border-emerald-500/20',
   },
   warning: {
-    icon: 'bg-amber-500/10 text-amber-500',
-    border: 'border-amber-500/20',
+    icon: 'bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-500',
+    border: 'border-amber-200 dark:border-amber-500/20',
   },
   info: {
-    icon: 'bg-blue-500/10 text-blue-500',
-    border: 'border-blue-500/20',
+    icon: 'bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-500',
+    border: 'border-blue-200 dark:border-blue-500/20',
   },
   danger: {
-    icon: 'bg-red-500/10 text-red-500',
-    border: 'border-red-500/20',
+    icon: 'bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-500',
+    border: 'border-red-200 dark:border-red-500/20',
   },
 };
 
@@ -38,17 +38,17 @@ export function StatCard({ title, value, subtitle, icon, variant = 'default', tr
   const styles = variantStyles[variant] || variantStyles.default;
 
   const trendColors = {
-    up: 'text-emerald-500',
-    down: 'text-red-500',
+    up: 'text-emerald-600 dark:text-emerald-500',
+    down: 'text-red-600 dark:text-red-500',
     neutral: 'text-zinc-500',
   };
 
   return (
-    <div className={`rounded-xl border ${styles.border} bg-zinc-900 p-5 transition-all hover:border-zinc-700`}>
+    <div className={`rounded-xl border ${styles.border} bg-white p-5 transition-all hover:shadow-md dark:bg-zinc-900 dark:hover:border-zinc-700`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-sm font-medium text-zinc-500">{title}</p>
-          <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-100">
+          <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
             {value}
           </p>
           {subtitle && (

@@ -97,7 +97,7 @@ export function AppointmentAdd({ onClose }: AppointmentAddProps) {
         </Select>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-zinc-300">
+          <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
             Date & Heure
           </label>
           <div className="flex gap-3">
@@ -114,7 +114,7 @@ export function AppointmentAdd({ onClose }: AppointmentAddProps) {
                 setValue('date', `${y}-${m}-${d}`);
               }}
               dateFormat="dd/MM/yyyy"
-              className="input-base flex-1"
+              className="block w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-emerald-500"
               placeholderText="Date"
             />
             <Select
@@ -131,7 +131,7 @@ export function AppointmentAdd({ onClose }: AppointmentAddProps) {
             </Select>
           </div>
           {errors.date && (
-            <p className="mt-1 text-sm text-red-400">
+            <p className="mt-1 text-sm text-red-500">
               {errors.date.message}
             </p>
           )}
@@ -171,7 +171,7 @@ export function AppointmentAdd({ onClose }: AppointmentAddProps) {
         {...register('comment')}
       />
 
-      <div className="flex justify-end gap-3 border-t border-zinc-800 pt-5">
+      <div className="flex justify-end gap-3 border-t border-zinc-200 pt-5 dark:border-zinc-800">
         <Button type="button" variant="outline" onClick={onClose}>
           Annuler
         </Button>

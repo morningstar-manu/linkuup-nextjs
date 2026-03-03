@@ -20,10 +20,10 @@ export default function HomePage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-100 sm:text-3xl">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-3xl">
             Tableau de bord
           </h1>
-          <p className="mt-1 text-zinc-500">
+          <p className="mt-1 text-zinc-600 dark:text-zinc-500">
             Gerez vos rendez-vous et consultez les statistiques
           </p>
         </div>
@@ -41,9 +41,9 @@ export default function HomePage() {
 
       <DashboardStats refreshTrigger={refreshTrigger} />
 
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900">
-        <div className="border-b border-zinc-800 px-6 py-4">
-          <h2 className="text-lg font-semibold text-zinc-100">Rendez-vous recents</h2>
+      <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Rendez-vous recents</h2>
         </div>
         <AppointmentList refreshTrigger={refreshTrigger} />
       </div>
