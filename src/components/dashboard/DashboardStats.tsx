@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { useSelector } from 'react-redux';
@@ -15,10 +15,15 @@ interface DashboardStatsProps {
 }
 
 export function DashboardStats({ refreshTrigger }: DashboardStatsProps) {
+  const [mounted, setMounted] = useState(false);
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.id ?? (user as { _id?: string })?._id;
 
   const currentMonth = dayjs().format('YYYY-MM');
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const { data, isLoading } = useQuery({
     queryKey: ['appointments', 'user', userId, currentMonth, refreshTrigger, 'stats'],
@@ -76,7 +81,7 @@ export function DashboardStats({ refreshTrigger }: DashboardStatsProps) {
     };
   }, [appointments]);
 
-  if (isLoading) {
+  if (!mounted || isLoading) {
     return <SkeletonStats count={4} />;
   }
 
