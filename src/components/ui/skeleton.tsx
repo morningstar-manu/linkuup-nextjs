@@ -10,7 +10,7 @@ export function Skeleton({ className }: SkeletonProps) {
   return (
     <div
       className={cn(
-        'animate-pulse rounded-lg bg-zinc-800',
+        'animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-800',
         className
       )}
     />
@@ -44,7 +44,7 @@ interface SkeletonCardProps {
 
 export function SkeletonCard({ className }: SkeletonCardProps) {
   return (
-    <div className={cn('rounded-xl border border-zinc-800 bg-zinc-900 p-4 space-y-4', className)}>
+    <div className={cn('rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 space-y-4', className)}>
       <div className="flex items-center gap-3">
         <Skeleton className="h-10 w-10 rounded-full" />
         <div className="space-y-2 flex-1">
@@ -67,7 +67,7 @@ export function SkeletonTable({ rows = 5, columns = 4, className }: SkeletonTabl
   return (
     <div className={cn('space-y-3', className)}>
       {/* Header */}
-      <div className="flex gap-4 pb-2 border-b border-zinc-800">
+      <div className="flex gap-4 pb-2 border-b border-zinc-200 dark:border-zinc-800">
         {Array.from({ length: columns }).map((_, i) => (
           <Skeleton key={i} className="h-4 flex-1" />
         ))}
@@ -97,15 +97,17 @@ interface SkeletonStatsProps {
 
 export function SkeletonStats({ count = 4, className }: SkeletonStatsProps) {
   return (
-    <div className={cn('grid gap-4 grid-cols-2 lg:grid-cols-4', className)}>
+    <div className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-4', className)}>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="rounded-xl border border-zinc-800 bg-zinc-900 p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-8 w-8 rounded-lg" />
+        <div key={i} className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-3">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="mt-2 h-8 w-16" />
+              <Skeleton className="mt-1 h-3 w-24" />
+            </div>
+            <Skeleton className="h-10 w-10 rounded-lg" />
           </div>
-          <Skeleton className="h-8 w-16" />
-          <Skeleton className="h-3 w-24" />
         </div>
       ))}
     </div>
