@@ -1,12 +1,17 @@
 /**
- * Script exécuté avant le premier paint pour éviter le flash de thème incorrect.
- * Lit localStorage et prefers-color-scheme, applique la classe 'dark' sur <html>.
+ * Script execute avant le premier paint pour eviter le flash de theme incorrect.
+ * Respecte la preference systeme par defaut.
  */
 export function ThemeScript() {
   return (
     <script
       dangerouslySetInnerHTML={{
-        __html: `(function(){var s=localStorage.getItem('linkuup-theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;var dark=s==='dark'||(s!=='light'&&d);document.documentElement.classList.toggle('dark',dark);})();`,
+        __html: `(function(){
+          var s=localStorage.getItem('linkuup-theme');
+          var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var dark=s==='dark'||(s!=='light'&&prefersDark);
+          document.documentElement.classList.toggle('dark',dark);
+        })();`,
       }}
     />
   );

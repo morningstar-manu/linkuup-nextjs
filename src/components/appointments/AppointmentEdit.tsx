@@ -10,15 +10,18 @@ import { useCommercials } from '@/lib/hooks/useUsers';
 import { TIME_SLOTS } from '@/lib/types/appointment';
 import { getErrorMessage } from '@/lib/utils/errors';
 import type { Appointment, AppointmentStatus } from '@/lib/types/appointment';
-import { getInputClass } from '@/lib/utils/input';
+import { Button } from '@/components/ui/button';
+import { Input, Textarea } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 
 const STATUS_OPTIONS: { value: AppointmentStatus; label: string }[] = [
-  { value: 'confirmed', label: 'Confirmé' },
+  { value: 'confirmed', label: 'Confirme' },
   { value: 'pending', label: 'En Attente' },
-  { value: 'cancelled', label: 'Annulé' },
-  { value: 'not-interested', label: 'Pas Intéressé' },
+  { value: 'cancelled', label: 'Annule' },
+  { value: 'not-interested', label: 'Pas Interesse' },
   { value: 'to-be-reminded', label: 'A Rappeler' },
-  { value: 'longest-date', label: 'Date Eloignée' },
+  { value: 'longest-date', label: 'Date Eloignee' },
 ];
 
 export function AppointmentEdit() {
@@ -64,9 +67,7 @@ export function AppointmentEdit() {
   }, [appointment]);
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -85,7 +86,7 @@ export function AppointmentEdit() {
 
   const handleDelete = async () => {
     if (!id) return;
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce rendez-vous ?')) {
+    if (window.confirm('Etes-vous sur de vouloir supprimer ce rendez-vous ?')) {
       try {
         await deleteMutation.mutateAsync(id);
         router.back();
@@ -95,106 +96,76 @@ export function AppointmentEdit() {
     }
   };
 
-  const inputField = () => getInputClass();
-  const btnPrimary =
-    'inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:from-indigo-600 hover:to-indigo-700 active:scale-[0.98]';
-  const btnSecondary =
-    'inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300';
-
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+        <Spinner size="lg" />
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-800 dark:bg-red-900/20">
-        <h2 className="text-lg font-semibold text-red-800 dark:text-red-300">
-          Erreur de chargement
-        </h2>
-        <p className="mt-2 text-sm text-red-700 dark:text-red-400">
-          {getErrorMessage(error)}
-        </p>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="mt-4 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-700 dark:bg-slate-800 dark:text-red-400"
-        >
+      <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-6">
+        <h2 className="text-lg font-semibold text-red-400">Erreur de chargement</h2>
+        <p className="mt-2 text-sm text-red-400/80">{getErrorMessage(error)}</p>
+        <Button variant="outline" onClick={() => router.back()} className="mt-4">
           Retour
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+      <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">
         Modifier le rendez-vous
       </h1>
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50">
-        <p className="mb-6 text-sm text-slate-500 dark:text-gray-400">
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
+        <p className="mb-6 text-sm text-zinc-400">
           Rendez-vous pris par {appointment?.userId?.firstName}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300">
-                Statut
-              </label>
-              <select
-                name="status"
-                value={formData.status ?? ''}
-                onChange={handleChange}
-                className={inputField()}
-              >
-                <option value="">Sélectionner un statut</option>
-                {STATUS_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Statut"
+              name="status"
+              value={formData.status ?? ''}
+              onChange={handleChange}
+            >
+              <option value="">Selectionner un statut</option>
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </Select>
+
+            <Select
+              label="Commercial"
+              name="commercial"
+              value={formData.commercial ?? ''}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Selectionner un commercial</option>
+              {commercials.map((c) => (
+                <option key={c.id} value={c.slug}>
+                  {c.fullName}
+                </option>
+              ))}
+            </Select>
+
+            <Input
+              label="Nom"
+              name="name"
+              value={formData.name ?? ''}
+              onChange={handleChange}
+            />
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300">
-                Commercial
-              </label>
-              <select
-                name="commercial"
-                value={formData.commercial ?? ''}
-                onChange={handleChange}
-                required
-                className={inputField()}
-              >
-                <option value="">Sélectionner un commercial</option>
-                {commercials.map((c) => (
-                  <option key={c.id} value={c.slug}>
-                    {c.fullName}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300">
-                Nom
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name ?? ''}
-                onChange={handleChange}
-                className={inputField()}
-              />
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300">
+              <label className="mb-1.5 block text-sm font-medium text-zinc-300">
                 Date & Heure
               </label>
               <div className="flex gap-3">
@@ -203,13 +174,13 @@ export function AppointmentEdit() {
                   name="date"
                   value={formData.date ?? ''}
                   onChange={handleChange}
-                  className={`${inputField()} flex-1`}
+                  className="input-base flex-1"
                 />
-                <select
+                <Select
                   name="time"
                   value={formData.time ?? ''}
                   onChange={handleChange}
-                  className={`${inputField()} w-32`}
+                  className="w-32"
                 >
                   <option value="">Heure</option>
                   {TIME_SLOTS.map((slot) => (
@@ -217,86 +188,59 @@ export function AppointmentEdit() {
                       {slot}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             </div>
 
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300">
-                Téléphone (fixe)
-              </label>
-              <input
-                type="text"
-                name="phone_1"
-                value={formData.phone_1 ?? ''}
-                onChange={handleChange}
-                className={inputField()}
-              />
-            </div>
+            <Input
+              label="Telephone (fixe)"
+              name="phone_1"
+              value={formData.phone_1 ?? ''}
+              onChange={handleChange}
+            />
 
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300">
-                Téléphone (mobile)
-              </label>
-              <input
-                type="text"
-                name="phone_2"
-                value={formData.phone_2 ?? ''}
-                onChange={handleChange}
-                className={inputField()}
-              />
-            </div>
+            <Input
+              label="Telephone (mobile)"
+              name="phone_2"
+              value={formData.phone_2 ?? ''}
+              onChange={handleChange}
+            />
 
             <div className="sm:col-span-2">
-              <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300">
-                Adresse
-              </label>
-              <input
-                type="text"
+              <Input
+                label="Adresse"
                 name="address"
                 value={formData.address ?? ''}
                 onChange={handleChange}
-                className={inputField()}
               />
             </div>
 
             <div className="sm:col-span-2">
-              <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300">
-                Commentaire
-              </label>
-              <textarea
+              <Textarea
+                label="Commentaire"
                 name="comment"
                 value={formData.comment ?? ''}
                 onChange={handleChange}
                 rows={3}
-                className={`${inputField()} resize-none`}
               />
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3 border-t border-gray-200 pt-6 dark:border-gray-700">
-            <button
-              type="submit"
-              disabled={updateMutation.isPending}
-              className={btnPrimary}
-            >
-              {updateMutation.isPending ? 'Enregistrement...' : 'Enregistrer'}
-            </button>
-            <button
+          <div className="flex flex-wrap gap-3 border-t border-zinc-800 pt-6">
+            <Button type="submit" isLoading={updateMutation.isPending}>
+              Enregistrer
+            </Button>
+            <Button
               type="button"
+              variant="danger"
               onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-              className="rounded-xl border border-red-300 bg-white px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-800 dark:bg-slate-800 dark:text-red-400 dark:hover:bg-red-900/20"
+              isLoading={deleteMutation.isPending}
             >
               Supprimer
-            </button>
-            <button
-              type="button"
-              onClick={() => router.push('/admin')}
-              className={btnSecondary}
-            >
+            </Button>
+            <Button type="button" variant="outline" onClick={() => router.push('/admin')}>
               Annuler
-            </button>
+            </Button>
           </div>
         </form>
       </div>

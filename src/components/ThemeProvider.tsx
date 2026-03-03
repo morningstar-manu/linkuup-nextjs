@@ -13,15 +13,20 @@ const ThemeContext = createContext<{
 const STORAGE_KEY = 'linkuup-theme';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('light');
+  const [theme, setThemeState] = useState<Theme>(() => {
+    // On the server, default to light but the actual theme is set by ThemeScript
+    if (typeof window === 'undefined') return 'light';
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return stored === 'dark' || stored === 'light' ? stored : (prefersDark ? 'dark' : 'light');
+  });
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const stored = localStorage.getItem(STORAGE_KEY);
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initial = stored === 'dark' || stored === 'light' ? stored : (prefersDark ? 'dark' : 'light');
-    setThemeState(initial);
+    // Re-sync with DOM in case ThemeScript set a different value
+    const isDark = document.documentElement.classList.contains('dark');
+    setThemeState(isDark ? 'dark' : 'light');
   }, []);
 
   useEffect(() => {

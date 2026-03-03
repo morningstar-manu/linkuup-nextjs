@@ -1,50 +1,87 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/lib/store';
 import { clear } from '@/lib/store/slices/alertSlice';
+import { cn } from '@/lib/utils';
 
 export function Alert() {
   const { message, type } = useSelector((state: RootState) => state.alert);
   const dispatch = useDispatch<AppDispatch>();
+  const [isExiting, setIsExiting] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     if (message) {
-      const timer = setTimeout(() => dispatch(clear()), 5000);
+      setIsVisible(true);
+      setIsExiting(false);
+      const timer = setTimeout(() => {
+        setIsExiting(true);
+        setTimeout(() => {
+          dispatch(clear());
+          setIsVisible(false);
+        }, 200);
+      }, 4800);
       return () => clearTimeout(timer);
     }
   }, [message, dispatch]);
 
-  if (!message) return null;
+  const handleClose = () => {
+    setIsExiting(true);
+    setTimeout(() => {
+      dispatch(clear());
+      setIsVisible(false);
+    }, 200);
+  };
+
+  if (!message || !isVisible) return null;
 
   const isSuccess = type === 'success';
 
   return (
-    <div className="mx-auto max-w-7xl py-2">
+    <div className="fixed bottom-4 right-4 z-50">
       <div
-        className={`flex items-center justify-between gap-4 rounded-xl border px-4 py-3 shadow-sm ${
+        className={cn(
+          'flex items-center gap-3 rounded-lg border px-4 py-3 shadow-xl',
+          'transition-all duration-200',
+          isExiting ? 'anim-slide-out-right' : 'anim-slide-in-right',
           isSuccess
-            ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
-            : 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/50 dark:text-red-300'
-        }`}
+            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
+            : 'border-red-500/20 bg-red-500/10 text-red-400'
+        )}
       >
-        <div className="flex items-center gap-3">
+        <div className={cn(
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+          isSuccess
+            ? 'bg-emerald-500/20'
+            : 'bg-red-500/20'
+        )}>
           {isSuccess ? (
-            <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           ) : (
-            <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           )}
-          <p className="text-sm font-medium">{message}</p>
+        </div>
+        <div className="flex-1 pr-2">
+          <p className="text-sm font-medium">
+            {isSuccess ? 'Succes' : 'Erreur'}
+          </p>
+          <p className="text-sm opacity-80">{message}</p>
         </div>
         <button
           type="button"
-          onClick={() => dispatch(clear())}
-          className="rounded-lg p-1.5 opacity-70 transition-opacity hover:opacity-100"
+          onClick={handleClose}
+          className={cn(
+            'rounded-lg p-1.5 transition-colors',
+            isSuccess
+              ? 'hover:bg-emerald-500/20'
+              : 'hover:bg-red-500/20'
+          )}
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

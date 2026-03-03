@@ -9,15 +9,17 @@ import { useUser, useCreateUser, useUpdateUser } from '@/lib/hooks/useUsers';
 import { success, error } from '@/lib/store/slices/alertSlice';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/lib/store';
-import { getInputClass } from '@/lib/utils/input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 
 const userSchema = z
   .object({
-    firstName: z.string().min(1, 'Prénom requis'),
+    firstName: z.string().min(1, 'Prenom requis'),
     lastName: z.string().min(1, 'Nom requis'),
     email: z.string().min(1, 'Email requis').email('Email invalide'),
     password: z.string().optional(),
-    roles: z.array(z.string()).min(1, 'Sélectionnez au moins un rôle'),
+    roles: z.array(z.string()).min(1, 'Selectionnez au moins un role'),
     isActive: z.boolean().optional(),
   })
   .refine(
@@ -28,7 +30,7 @@ const userSchema = z
       return true;
     },
     {
-      message: 'Le mot de passe doit contenir au moins 6 caractères',
+      message: 'Le mot de passe doit contenir au moins 6 caracteres',
       path: ['password'],
     }
   );
@@ -38,7 +40,7 @@ type UserFormData = z.infer<typeof userSchema>;
 const ROLE_OPTIONS = [
   { value: 'user', label: 'Utilisateur' },
   { value: 'commercial', label: 'Commercial' },
-  { value: 'moderator', label: 'Modérateur' },
+  { value: 'moderator', label: 'Moderateur' },
   { value: 'admin', label: 'Administrateur' },
 ] as const;
 
@@ -106,21 +108,21 @@ export function UserForm() {
     };
 
     if (!isEdit && !payload.password) {
-      dispatch(error('Le mot de passe est requis pour créer un utilisateur'));
+      dispatch(error('Le mot de passe est requis pour creer un utilisateur'));
       return;
     }
 
     try {
       if (isEdit && userId) {
         await updateMutation.mutateAsync({ id: userId, data: payload });
-        dispatch(success('Utilisateur mis à jour'));
+        dispatch(success('Utilisateur mis a jour'));
       } else {
         await createMutation.mutateAsync(payload as Parameters<typeof createMutation.mutateAsync>[0]);
-        dispatch(success('Utilisateur créé'));
+        dispatch(success('Utilisateur cree'));
       }
       router.push('/users');
     } catch {
-      // Erreur affichée via MutationCache (alert global)
+      // Erreur affichee via MutationCache (alert global)
     }
   };
 
@@ -134,126 +136,72 @@ export function UserForm() {
     }
   };
 
-  const inputField = (err?: boolean) => getInputClass(err);
-  const btnPrimary =
-    'inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:from-indigo-600 hover:to-indigo-700 active:scale-[0.98]';
-  const btnSecondary =
-    'inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300';
-
   if (isLoading && isEdit) {
     return (
       <div className="flex justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" />
+        <Spinner size="lg" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+      <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">
         {isEdit ? "Modifier l'utilisateur" : 'Nouvel utilisateur'}
       </h1>
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50">
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label
-                htmlFor="firstName"
-                className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300"
-              >
-                Prénom
-              </label>
-              <input
-                id="firstName"
-                className={inputField(!!errors.firstName)}
-                {...register('firstName')}
-              />
-              {errors.firstName && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                  {errors.firstName.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <label
-                htmlFor="lastName"
-                className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300"
-              >
-                Nom
-              </label>
-              <input
-                id="lastName"
-                className={inputField(!!errors.lastName)}
-                {...register('lastName')}
-              />
-              {errors.lastName && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                  {errors.lastName.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label
-              htmlFor="email"
-              className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              className={inputField(!!errors.email)}
-              {...register('email')}
+            <Input
+              label="Prenom"
+              error={errors.firstName?.message}
+              {...register('firstName')}
             />
-            {errors.email && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                {errors.email.message}
-              </p>
-            )}
+            <Input
+              label="Nom"
+              error={errors.lastName?.message}
+              {...register('lastName')}
+            />
           </div>
 
+          <Input
+            label="Email"
+            type="email"
+            error={errors.email?.message}
+            {...register('email')}
+          />
+
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-gray-300">
-              Activité
+            <label className="mb-2 block text-sm font-medium text-zinc-300">
+              Activite
             </label>
             <label className="inline-flex cursor-pointer items-center gap-2">
               <input
                 type="checkbox"
-                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                className="h-4 w-4 rounded border-zinc-700 bg-zinc-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-zinc-900"
                 checked={watch('isActive') ?? true}
                 onChange={(e) => setValue('isActive', e.target.checked)}
               />
-              <span className="text-sm text-slate-700 dark:text-gray-300">
-                Compte actif (peut se connecter et créer des rendez-vous)
+              <span className="text-sm text-zinc-300">
+                Compte actif (peut se connecter et creer des rendez-vous)
               </span>
             </label>
           </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300"
-            >
-              Mot de passe
-              {isEdit && (
-                <span className="ml-1 font-normal text-slate-500">
-                  (laisser vide pour conserver)
-                </span>
-              )}
-            </label>
-            <input
-              id="password"
-              type="password"
-              className={inputField(!!errors.password)}
-              {...register('password')}
-            />
-          </div>
+          <Input
+            label={
+              isEdit
+                ? 'Mot de passe (laisser vide pour conserver)'
+                : 'Mot de passe'
+            }
+            type="password"
+            error={errors.password?.message}
+            {...register('password')}
+          />
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-gray-300">
-              Rôles
+            <label className="mb-2 block text-sm font-medium text-zinc-300">
+              Roles
             </label>
             <div className="flex flex-wrap gap-4">
               {ROLE_OPTIONS.map(({ value, label }) => (
@@ -265,52 +213,30 @@ export function UserForm() {
                     type="checkbox"
                     checked={watchedRoles.includes(value)}
                     onChange={(e) => handleRoleChange(value, e.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    className="h-4 w-4 rounded border-zinc-700 bg-zinc-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-zinc-900"
                   />
-                  <span className="text-sm text-slate-700 dark:text-gray-300">
-                    {label}
-                  </span>
+                  <span className="text-sm text-zinc-300">{label}</span>
                 </label>
               ))}
             </div>
             {errors.roles && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                {errors.roles.message}
-              </p>
+              <p className="mt-1 text-sm text-red-400">{errors.roles.message}</p>
             )}
           </div>
 
-          <div className="flex flex-wrap gap-3 border-t border-gray-200 pt-6 dark:border-gray-700">
-            <button
+          <div className="flex flex-wrap gap-3 border-t border-zinc-800 pt-6">
+            <Button
               type="submit"
-              disabled={
-                isSubmitting ||
-                createMutation.isPending ||
-                updateMutation.isPending
-              }
-              className={btnPrimary}
+              isLoading={isSubmitting || createMutation.isPending || updateMutation.isPending}
             >
-              {(isSubmitting ||
-                createMutation.isPending ||
-                updateMutation.isPending) ? (
-                <span className="flex items-center gap-2">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Enregistrement...
-                </span>
-              ) : (
-                'Enregistrer'
-              )}
-            </button>
-            <button type="button" onClick={() => reset()} className={btnSecondary}>
-              Réinitialiser
-            </button>
-            <button
-              type="button"
-              onClick={() => router.push('/users')}
-              className={btnSecondary}
-            >
+              Enregistrer
+            </Button>
+            <Button type="button" variant="outline" onClick={() => reset()}>
+              Reinitialiser
+            </Button>
+            <Button type="button" variant="outline" onClick={() => router.push('/users')}>
               Annuler
-            </button>
+            </Button>
           </div>
         </form>
       </div>

@@ -30,9 +30,11 @@ export function useWeekManager() {
 }
 
 export function useClock() {
-  const [time, setTime] = useState(new Date());
+  const [time, setTime] = useState<Date | null>(null);
 
   useEffect(() => {
+    // Set initial time on client only to avoid hydration mismatch
+    setTime(new Date());
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);

@@ -3,7 +3,7 @@
 import { useWeekManager } from '@/lib/utils/date';
 import { useQuery } from '@tanstack/react-query';
 import { appointmentsApi } from '@/lib/api/appointments';
-import { getInputClass } from '@/lib/utils/input';
+import { Spinner } from '@/components/ui/spinner';
 
 interface EmployeeWeek {
   name: string;
@@ -31,15 +31,21 @@ export function AppointmentWeek() {
   const calculateTotal = (sales: number[] = []) =>
     sales.reduce((a, b) => a + b, 0);
 
-  const inputField = () => getInputClass();
-
-  if (isLoading) return <div className="p-4">Chargement...</div>;
-  if (isError)
+  if (isLoading) {
     return (
-      <div className="p-4 text-red-500">
+      <div className="flex justify-center py-12">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="p-4 text-red-400">
         Erreur: {(error as Error).message}
       </div>
     );
+  }
 
   return (
     <div className="p-4">
@@ -49,11 +55,11 @@ export function AppointmentWeek() {
           aria-label="Semaine"
           value={week}
           onChange={(e) => handleWeekChange(e.target.value)}
-          className={`${inputField()} max-w-[200px]`}
+          className="input-base max-w-[200px]"
         />
       </div>
 
-      <h2 className="mb-4 text-lg font-semibold text-slate-700 dark:text-slate-300">
+      <h2 className="mb-4 text-lg font-semibold text-zinc-300">
         Nombre de rendez-vous pris par jour (par agent)
       </h2>
 
@@ -61,41 +67,36 @@ export function AppointmentWeek() {
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
-              <th className="border border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
+              <th className="border border-zinc-700 bg-zinc-800 px-4 py-3 text-left font-semibold text-zinc-300">
                 Agent
               </th>
-              {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'].map(
-                (day) => (
-                  <th
-                    key={day}
-                    className="border border-slate-200 bg-indigo-50 px-4 py-3 text-center font-semibold text-slate-700 dark:border-slate-600 dark:bg-indigo-900/20 dark:text-slate-300"
-                  >
-                    {day}
-                  </th>
-                )
-              )}
-              <th className="border border-slate-200 bg-indigo-50 px-4 py-3 text-center font-semibold text-slate-700 dark:border-slate-600 dark:bg-indigo-900/20 dark:text-slate-300">
+              {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'].map((day) => (
+                <th
+                  key={day}
+                  className="border border-zinc-700 bg-emerald-500/10 px-4 py-3 text-center font-semibold text-zinc-300"
+                >
+                  {day}
+                </th>
+              ))}
+              <th className="border border-zinc-700 bg-emerald-500/10 px-4 py-3 text-center font-semibold text-zinc-300">
                 Total
               </th>
             </tr>
           </thead>
           <tbody>
             {employees.map((employee, index) => (
-              <tr
-                key={index}
-                className="border-b border-slate-200 dark:border-slate-600"
-              >
-                <td className="border-r border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-900 dark:border-slate-600 dark:bg-slate-800/50 dark:text-white">
+              <tr key={index} className="border-b border-zinc-700">
+                <td className="border-r border-zinc-700 bg-zinc-800/50 px-4 py-3 font-semibold text-zinc-100">
                   {employee.name}
                 </td>
                 {employee.week?.map((sale, dayIndex) => (
                   <td
                     key={dayIndex}
-                    className={`border-r border-slate-200 px-4 py-3 text-center font-semibold ${
+                    className={`border-r border-zinc-700 px-4 py-3 text-center font-semibold ${
                       sale > 2
-                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
-                        : 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
-                    } ${sale === 0 ? '!text-red-500 dark:!text-red-400' : ''}`}
+                        ? 'bg-emerald-500/10 text-emerald-400'
+                        : 'bg-amber-500/10 text-amber-400'
+                    } ${sale === 0 ? '!text-red-400' : ''}`}
                   >
                     {sale}
                   </td>
@@ -103,13 +104,11 @@ export function AppointmentWeek() {
                 <td
                   className={`px-4 py-3 text-center font-bold ${
                     calculateTotal(employee.week) > 14
-                      ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400'
-                      : ''
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : 'text-zinc-300'
                   }`}
                 >
-                  {calculateTotal(employee.week) > 14 && (
-                    <span className="mr-1">★</span>
-                  )}
+                  {calculateTotal(employee.week) > 14 && <span className="mr-1">*</span>}
                   {calculateTotal(employee.week)}
                 </td>
               </tr>
@@ -117,29 +116,23 @@ export function AppointmentWeek() {
           </tbody>
           {employees.length > 0 && employees[0].week && (
             <tfoot>
-              <tr className="border-t-2 border-slate-300 bg-slate-100 dark:border-slate-500 dark:bg-slate-800">
-                <td className="border-r border-slate-200 px-4 py-3 text-left font-bold text-slate-900 dark:border-slate-600 dark:text-white">
+              <tr className="border-t-2 border-zinc-600 bg-zinc-800">
+                <td className="border-r border-zinc-700 px-4 py-3 text-left font-bold text-zinc-100">
                   Total
                 </td>
                 {employees[0].week.map((_, dayIndex) => (
                   <td
                     key={dayIndex}
-                    className={`border-r border-slate-200 px-4 py-3 text-center font-bold ${
-                      employees.reduce(
-                        (t, e) => t + (e.week?.[dayIndex] ?? 0),
-                        0
-                      ) > 14
-                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
-                        : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                    className={`border-r border-zinc-700 px-4 py-3 text-center font-bold ${
+                      employees.reduce((t, e) => t + (e.week?.[dayIndex] ?? 0), 0) > 14
+                        ? 'bg-emerald-500/20 text-emerald-400'
+                        : 'bg-amber-500/20 text-amber-400'
                     }`}
                   >
-                    {employees.reduce(
-                      (t, e) => t + (e.week?.[dayIndex] ?? 0),
-                      0
-                    )}
+                    {employees.reduce((t, e) => t + (e.week?.[dayIndex] ?? 0), 0)}
                   </td>
                 ))}
-                <td className="px-4 py-3 text-center font-bold text-indigo-600 dark:text-indigo-400">
+                <td className="px-4 py-3 text-center font-bold text-emerald-400">
                   {calculateTotal(employees.flatMap((e) => e.week ?? []))}
                 </td>
               </tr>

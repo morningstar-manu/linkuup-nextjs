@@ -9,10 +9,10 @@ import { logout } from '@/lib/store/slices/authSlice';
 import { useTheme } from '@/components/ThemeProvider';
 
 const navLinkClass = (active: boolean) =>
-  `px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+  `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
     active
-      ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400'
-      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
+      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-500'
+      : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
   }`;
 
 export function Navbar() {
@@ -33,20 +33,20 @@ export function Navbar() {
   if (!mounted || !isLogged) return null;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80">
+    <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/90 backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/90">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-10">
+        <div className="flex items-center gap-8">
           <Link
             href="/"
-            className="flex items-center gap-2.5 transition-all duration-200 hover:opacity-90"
+            className="flex items-center gap-2.5 transition-opacity hover:opacity-90"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25">
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-white">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
             </div>
-            <span className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
-              Linkuup Medical
+            <span className="text-lg font-semibold text-zinc-900 dark:text-white">
+              Linkuup
             </span>
           </Link>
 
@@ -76,7 +76,7 @@ export function Navbar() {
               href="/about"
               className={navLinkClass(pathname === '/about')}
             >
-              À propos
+              A propos
             </Link>
           </div>
         </div>
@@ -85,16 +85,16 @@ export function Navbar() {
           <button
             type="button"
             onClick={() => setUserMenuOpen(!userMenuOpen)}
-            className="flex items-center gap-3 rounded-xl p-2 pr-3 transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="flex items-center gap-3 rounded-lg p-2 pr-3 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-400 to-indigo-600 text-sm font-semibold text-white shadow-md">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 text-sm font-semibold text-white">
               {user?.firstName?.[0]}{user?.lastName?.[0]}
             </div>
             <div className="hidden text-left sm:block">
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">
+              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                 {user?.firstName} {user?.lastName}
               </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[140px]">
+              <p className="text-xs text-zinc-500 truncate max-w-[140px]">
                 {user?.email}
               </p>
             </div>
@@ -106,24 +106,24 @@ export function Navbar() {
                 className="fixed inset-0 z-40"
                 onClick={() => setUserMenuOpen(false)}
               />
-              <div className="absolute right-4 top-16 z-50 w-64 animate-slide-down rounded-2xl border border-slate-200 bg-white py-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                <div className="border-b border-slate-100 px-4 py-3 dark:border-slate-700">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+              <div className="absolute right-0 top-14 z-50 w-56 anim-slide-down rounded-lg border border-zinc-200 bg-white py-1 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
+                <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
+                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                     {user?.firstName} {user?.lastName}
                   </p>
-                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                  <p className="truncate text-xs text-zinc-500">
                     {user?.email}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => dispatch(logout())}
-                  className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                  className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-red-500 transition-colors hover:bg-red-500/10"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
-                  Déconnexion
+                  Deconnexion
                 </button>
               </div>
             </>
@@ -132,7 +132,7 @@ export function Navbar() {
           <button
             type="button"
             onClick={toggleTheme}
-            className="rounded-xl p-2.5 text-slate-500 transition-all duration-200 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+            className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
             title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
           >
             {theme === 'dark' ? (
@@ -145,12 +145,13 @@ export function Navbar() {
               </svg>
             )}
           </button>
+          
           <button
             type="button"
             onClick={() => setMenuOpen(!menuOpen)}
-            className="rounded-xl p-2.5 md:hidden hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="rounded-lg p-2 text-zinc-500 md:hidden hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
           >
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {menuOpen ? (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               ) : (
@@ -162,7 +163,7 @@ export function Navbar() {
       </nav>
 
       {menuOpen && (
-        <div className="border-t border-slate-200 px-4 py-3 md:hidden dark:border-slate-800">
+        <div className="border-t border-zinc-200 px-4 py-3 md:hidden dark:border-zinc-800">
           <div className="flex flex-col gap-1">
             <Link href="/" className={navLinkClass(pathname === '/')} onClick={() => setMenuOpen(false)}>
               Accueil
@@ -180,7 +181,7 @@ export function Navbar() {
               </>
             )}
             <Link href="/about" className={navLinkClass(pathname === '/about')} onClick={() => setMenuOpen(false)}>
-              À propos
+              A propos
             </Link>
           </div>
         </div>

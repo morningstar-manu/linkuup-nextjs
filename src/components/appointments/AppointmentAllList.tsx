@@ -13,7 +13,10 @@ import { formatCommercialName } from '@/lib/utils/format';
 import { formatSelectedDate } from '@/lib/utils/date';
 import { downloadAsCSV } from '@/lib/utils/csv';
 import { getErrorMessage } from '@/lib/utils/errors';
-import { getInputClass } from '@/lib/utils/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Spinner } from '@/components/ui/spinner';
+import { EmptyState } from '@/components/ui/empty-state';
 
 dayjs.extend(isoWeek);
 
@@ -82,126 +85,92 @@ export function AppointmentAllList() {
     setDateRange(update);
   };
 
-  const inputField = () => getInputClass();
-  const btnSecondary =
-    'inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700';
-
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-slate-50/50 px-4 py-4 dark:border-slate-700 dark:bg-slate-800/30">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 bg-zinc-900/50 px-4 py-4">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <DatePicker
-              selectsRange
-              startDate={startDate}
-              endDate={endDate}
-              onChange={handleDateChange}
-              dateFormat="dd/MM/yyyy"
-              placeholderText="Du ... au ..."
-              className={`${inputField()} min-w-[220px]`}
-              monthsShown={2}
-            />
-          </div>
-          <button
-            type="button"
+          <DatePicker
+            selectsRange
+            startDate={startDate}
+            endDate={endDate}
+            onChange={handleDateChange}
+            dateFormat="dd/MM/yyyy"
+            placeholderText="Du ... au ..."
+            className="input-base min-w-[220px]"
+            monthsShown={2}
+          />
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() =>
               downloadAsCSV(
                 appointments as { docs?: AppointmentDoc[] },
                 titleDate ?? undefined
               )
             }
-            className={btnSecondary}
           >
-            Télécharger CSV
-          </button>
-          <span className="rounded-xl bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+            Telecharger CSV
+          </Button>
+          <Badge variant="default">
             {totalDocs} rendez-vous
-          </span>
+          </Badge>
         </div>
         <input
           type="text"
           placeholder="Filtrer par agent..."
           value={filterAgent}
           onChange={(e) => setFilterAgent(e.target.value)}
-          className={`${inputField()} max-w-[240px]`}
+          className="input-base max-w-[240px]"
         />
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-800/50">
-              <th className="px-4 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-400">
-                #
-              </th>
-              <th className="px-4 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-400">
-                Agent
-              </th>
-              <th className="px-4 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-400">
-                Date
-              </th>
-              <th className="px-4 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-400">
-                Docteur
-              </th>
-              <th className="px-4 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-400">
-                Téléphone
-              </th>
-              <th className="px-4 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-400">
-                Date RDV
-              </th>
-              <th className="px-4 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-400">
-                Commercial
-              </th>
-              <th className="px-4 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-400">
-                Statut
-              </th>
-              <th className="px-4 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-400">
-                Actions
-              </th>
+            <tr className="border-b border-zinc-800 bg-zinc-900/80">
+              <th className="px-4 py-3.5 text-left font-semibold text-zinc-400">#</th>
+              <th className="px-4 py-3.5 text-left font-semibold text-zinc-400">Agent</th>
+              <th className="px-4 py-3.5 text-left font-semibold text-zinc-400">Date</th>
+              <th className="px-4 py-3.5 text-left font-semibold text-zinc-400">Docteur</th>
+              <th className="px-4 py-3.5 text-left font-semibold text-zinc-400">Telephone</th>
+              <th className="px-4 py-3.5 text-left font-semibold text-zinc-400">Date RDV</th>
+              <th className="px-4 py-3.5 text-left font-semibold text-zinc-400">Commercial</th>
+              <th className="px-4 py-3.5 text-left font-semibold text-zinc-400">Statut</th>
+              <th className="px-4 py-3.5 text-left font-semibold text-zinc-400">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+          <tbody className="divide-y divide-zinc-800">
             {sorted.map((apt, index) => (
               <tr
                 key={apt._id}
-                className="transition-colors hover:bg-indigo-50/50 dark:hover:bg-slate-800/50"
+                className="transition-colors hover:bg-zinc-800/50"
               >
-                <td className="px-4 py-3 text-slate-600 dark:text-gray-400">
-                  {index + 1}
-                </td>
-                <td className="px-4 py-3 font-medium">
-                  {apt.userId?.firstName}
-                </td>
-                <td className="px-4 py-3">
-                  {dayjs(apt.createdAt).format('DD/MM')}
-                </td>
-                <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
-                  {apt.name.toUpperCase()}
-                </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 text-zinc-500">{index + 1}</td>
+                <td className="px-4 py-3 font-medium text-zinc-300">{apt.userId?.firstName}</td>
+                <td className="px-4 py-3 text-zinc-400">{dayjs(apt.createdAt).format('DD/MM')}</td>
+                <td className="px-4 py-3 font-medium text-zinc-100">{apt.name.toUpperCase()}</td>
+                <td className="px-4 py-3 text-zinc-400">
                   {apt.phone_1 && apt.phone_2
                     ? `${apt.phone_1} / ${apt.phone_2}`
                     : apt.phone_1 || apt.phone_2}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 text-zinc-400">
                   {dayjs(apt.date).format('DD/MM/YY')}, {apt.time}
                 </td>
-                <td className="max-w-[80px] truncate px-4 py-3">
+                <td className="max-w-[80px] truncate px-4 py-3 text-zinc-400">
                   {formatCommercialName(apt.commercial)}
                 </td>
                 <td className="px-4 py-3">
-                  <span
-                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(apt.status)}`}
-                  >
+                  <Badge className={getStatusColor(apt.status)}>
                     {getStatusLabel(apt.status)}
-                  </span>
+                  </Badge>
                 </td>
                 <td className="px-4 py-3">
                   <Link
                     href={`/appointments/edit/${apt._id}`}
-                    className="font-medium text-indigo-600 transition-colors hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+                    className="font-medium text-emerald-500 transition-colors hover:text-emerald-400"
                   >
-                    Éditer
+                    Editer
                   </Link>
                 </td>
               </tr>
@@ -211,7 +180,7 @@ export function AppointmentAllList() {
       </div>
 
       {isError && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-400">
+        <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-4 text-red-400 m-4">
           <p className="font-medium">Erreur de chargement</p>
           <p className="mt-1 text-sm">{getErrorMessage(error)}</p>
         </div>
@@ -219,14 +188,20 @@ export function AppointmentAllList() {
 
       {isLoading && (
         <div className="flex justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+          <Spinner size="lg" />
         </div>
       )}
 
       {!isLoading && !isError && sorted.length === 0 && (
-        <div className="py-12 text-center text-slate-500 dark:text-gray-400">
-          Aucun rendez-vous pour cette période
-        </div>
+        <EmptyState
+          icon={
+            <svg className="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          }
+          title="Aucun rendez-vous"
+          description="Aucun rendez-vous pour cette periode"
+        />
       )}
     </div>
   );
