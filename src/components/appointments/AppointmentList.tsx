@@ -9,7 +9,9 @@ import { appointmentsApi } from '@/lib/api/appointments';
 import { getStatusLabel, getStatusColor } from '@/lib/utils/status';
 import { formatCommercialName } from '@/lib/utils/format';
 import { getErrorMessage } from '@/lib/utils/errors';
-import { getInputClass } from '@/lib/utils/input';
+import { Badge } from '@/components/ui/badge';
+import { Spinner } from '@/components/ui/spinner';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface AppointmentListProps {
   refreshTrigger?: boolean;
@@ -50,8 +52,8 @@ export function AppointmentList({ refreshTrigger }: AppointmentListProps) {
 
   if (!mounted) {
     return (
-      <div className="py-12 text-center text-slate-500 dark:text-gray-400">
-        Chargement...
+      <div className="flex items-center justify-center py-12">
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -64,7 +66,7 @@ export function AppointmentList({ refreshTrigger }: AppointmentListProps) {
           min="2023-01"
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
-          className={`${getInputClass()} max-w-[200px]`}
+          className="input-base max-w-[200px]"
         />
       </div>
 
@@ -128,11 +130,9 @@ export function AppointmentList({ refreshTrigger }: AppointmentListProps) {
                   {formatCommercialName(apt.commercial)}
                 </td>
                 <td className="px-4 py-3">
-                  <span
-                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(apt.status)}`}
-                  >
+                  <Badge className={getStatusColor(apt.status)}>
                     {getStatusLabel(apt.status)}
-                  </span>
+                  </Badge>
                 </td>
               </tr>
             ))}
@@ -148,15 +148,21 @@ export function AppointmentList({ refreshTrigger }: AppointmentListProps) {
       )}
 
       {isLoading && (
-        <div className="flex flex-col items-center gap-4 py-12">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+        <div className="flex items-center justify-center py-12">
+          <Spinner size="lg" />
         </div>
       )}
 
       {!isLoading && !isError && appointments.length === 0 && (
-        <div className="py-12 text-center text-slate-500 dark:text-gray-400">
-          Aucun rendez-vous pour cette période
-        </div>
+        <EmptyState
+          icon={
+            <svg className="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          }
+          title="Aucun rendez-vous"
+          description="Aucun rendez-vous trouvé pour cette période"
+        />
       )}
     </div>
   );

@@ -49,15 +49,13 @@ export default function AppLayout({
   return (
     <div className="flex min-h-screen flex-col bg-grid-pattern">
       <Navbar />
-      <div className="px-4 sm:px-6 lg:px-8">
-        <Alert />
-      </div>
       <main className="mx-auto flex-1 w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {children}
       </main>
       <div className="mt-auto">
         <Footer />
       </div>
+      <Alert />
     </div>
   );
 }

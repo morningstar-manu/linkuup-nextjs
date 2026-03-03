@@ -11,7 +11,9 @@ import { success, error } from '@/lib/store/slices/alertSlice';
 import { useCreateAppointment } from '@/lib/hooks/useAppointments';
 import { useCommercials } from '@/lib/hooks/useUsers';
 import { TIME_SLOTS } from '@/lib/types/appointment';
-import { getInputClass } from '@/lib/utils/input';
+import { Button } from '@/components/ui/button';
+import { Input, TextArea } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 
 const appointmentSchema = z.object({
   commercial: z.string().min(1, 'Commercial requis'),
@@ -78,40 +80,21 @@ export function AppointmentAdd({ onClose }: AppointmentAddProps) {
     }
   };
 
-  const inputField = (err?: boolean) => getInputClass(err);
-  const btnPrimary =
-    'inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:from-indigo-600 hover:to-indigo-700 active:scale-[0.98]';
-  const btnSecondary =
-    'inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300';
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <div className="grid gap-5 sm:grid-cols-2">
-        <div>
-          <label
-            htmlFor="commercial"
-            className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300"
-          >
-            Commercial
-          </label>
-          <select
-            id="commercial"
-            className={inputField(!!errors.commercial)}
-            {...register('commercial')}
-          >
-            <option value="">Sélectionner un commercial</option>
-            {commercials.map((c) => (
-              <option key={c.id} value={c.slug}>
-                {c.fullName}
-              </option>
-            ))}
-          </select>
-          {errors.commercial && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-              {errors.commercial.message}
-            </p>
-          )}
-        </div>
+        <Select
+          label="Commercial"
+          error={errors.commercial?.message}
+          {...register('commercial')}
+        >
+          <option value="">Sélectionner un commercial</option>
+          {commercials.map((c) => (
+            <option key={c.id} value={c.slug}>
+              {c.fullName}
+            </option>
+          ))}
+        </Select>
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300">
@@ -131,11 +114,12 @@ export function AppointmentAdd({ onClose }: AppointmentAddProps) {
                 setValue('date', `${y}-${m}-${d}`);
               }}
               dateFormat="dd/MM/yyyy"
-              className={`${inputField()} flex-1`}
+              className="input-base flex-1"
               placeholderText="Date"
             />
-            <select
-              className={`${inputField(!!errors.time)} w-32`}
+            <Select
+              error={errors.time?.message}
+              className="w-32"
               {...register('time')}
             >
               <option value="">Heure</option>
@@ -144,121 +128,59 @@ export function AppointmentAdd({ onClose }: AppointmentAddProps) {
                   {slot}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           {errors.date && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">
               {errors.date.message}
             </p>
           )}
-          {errors.time && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-              {errors.time.message}
-            </p>
-          )}
         </div>
       </div>
 
-      <div>
-        <label
-          htmlFor="name"
-          className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300"
-        >
-          Nom complet
-        </label>
-        <input
-          id="name"
-          placeholder="Nom du patient"
-          className={inputField(!!errors.name)}
-          {...register('name')}
-        />
-        {errors.name && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {errors.name.message}
-          </p>
-        )}
-      </div>
+      <Input
+        label="Nom complet"
+        placeholder="Nom du patient"
+        error={errors.name?.message}
+        {...register('name')}
+      />
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <div>
-          <label
-            htmlFor="phone_1"
-            className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300"
-          >
-            Téléphone (fixe)
-          </label>
-          <input
-            id="phone_1"
-            placeholder="Fixe"
-            className={inputField()}
-            {...register('phone_1')}
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="phone_2"
-            className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300"
-          >
-            Téléphone (mobile)
-          </label>
-          <input
-            id="phone_2"
-            placeholder="Mobile"
-            className={inputField()}
-            {...register('phone_2')}
-          />
-        </div>
-      </div>
-
-      <div>
-        <label
-          htmlFor="address"
-          className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300"
-        >
-          Adresse
-        </label>
-        <input
-          id="address"
-          placeholder="Casablanca, Maroc"
-          className={inputField()}
-          {...register('address')}
+        <Input
+          label="Téléphone (fixe)"
+          placeholder="Fixe"
+          {...register('phone_1')}
+        />
+        <Input
+          label="Téléphone (mobile)"
+          placeholder="Mobile"
+          {...register('phone_2')}
         />
       </div>
 
-      <div>
-        <label
-          htmlFor="comment"
-          className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-gray-300"
-        >
-          Commentaire
-        </label>
-        <textarea
-          id="comment"
-          placeholder="Notes..."
-          rows={3}
-          className={`${inputField()} resize-none`}
-          {...register('comment')}
-        />
-      </div>
+      <Input
+        label="Adresse"
+        placeholder="Casablanca, Maroc"
+        {...register('address')}
+      />
 
-      <div className="flex justify-end gap-3 border-t border-gray-200 pt-6 dark:border-gray-700">
-        <button
+      <TextArea
+        label="Commentaire"
+        placeholder="Notes..."
+        rows={3}
+        {...register('comment')}
+      />
+
+      <div className="flex justify-end gap-3 border-t border-slate-200 pt-6 dark:border-slate-700">
+        <Button
           type="submit"
-          disabled={isSubmitting || createMutation.isPending}
-          className={btnPrimary}
+          isLoading={isSubmitting || createMutation.isPending}
         >
-          {(isSubmitting || createMutation.isPending) ? (
-            <span className="flex items-center gap-2">
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden />
-              Enregistrement...
-            </span>
-          ) : (
-            'Enregistrer'
-          )}
-        </button>
-        <button type="button" onClick={onClose} className={btnSecondary}>
+          Enregistrer
+        </Button>
+        <Button type="button" variant="outline" onClick={onClose}>
           Annuler
-        </button>
+        </Button>
       </div>
     </form>
   );

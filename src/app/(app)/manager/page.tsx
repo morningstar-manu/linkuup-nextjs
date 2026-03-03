@@ -2,6 +2,7 @@
 
 import { AppointmentWeek } from '@/components/appointments/AppointmentWeek';
 import { useClock } from '@/lib/utils/date';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function ManagerPage() {
   const time = useClock();
@@ -17,7 +18,7 @@ export default function ManagerPage() {
             Nombre de rendez-vous pris par chaque agent, par jour
           </p>
         </div>
-        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+        <Card className="flex items-center gap-3 px-4 py-2.5">
           <svg className="h-5 w-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -28,11 +29,13 @@ export default function ManagerPage() {
               second: '2-digit',
             })}
           </span>
-        </div>
+        </Card>
       </div>
-      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50">
-        <AppointmentWeek />
-      </div>
+      <Card>
+        <CardContent className="p-0">
+          <AppointmentWeek />
+        </CardContent>
+      </Card>
     </div>
   );
 }
