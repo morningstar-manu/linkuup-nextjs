@@ -1,6 +1,5 @@
 'use client';
 
-// Force rebuild - v2
 import { type ReactNode } from 'react';
 
 interface StatCardProps {
@@ -85,7 +84,6 @@ export function StatsGrid({ children }: StatsGridProps) {
   );
 }
 
-// Common stat icons
 export function CalendarIcon() {
   return (
     <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
