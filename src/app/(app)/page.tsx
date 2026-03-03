@@ -1,5 +1,6 @@
 'use client';
 
+// Force rebuild - v2
 import { useState } from 'react';
 import { AppointmentList } from '@/components/appointments/AppointmentList';
 import { AppointmentAdd } from '@/components/appointments/AppointmentAdd';
