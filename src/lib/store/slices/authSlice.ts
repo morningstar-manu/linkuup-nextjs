@@ -99,16 +99,31 @@ export const logout = createAsyncThunk(
     const state = getState() as { auth: AuthState };
     const userId = state.auth.user?.id;
 
+    // Récupérer le refresh token avant de vider le storage
+    let refreshToken: string | undefined;
+    try {
+      const encrypted = localStorage.getItem('encryptedAuthToken');
+      if (encrypted) {
+        const ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY || 'default-key-change-me';
+        const CryptoJS = (await import('crypto-js')).default;
+        const decrypted = CryptoJS.AES.decrypt(encrypted, ENCRYPTION_KEY);
+        const parsed = JSON.parse(decrypted.toString(CryptoJS.enc.Utf8));
+        refreshToken = parsed?.refreshToken;
+      }
+    } catch {
+      // Ignorer les erreurs de déchiffrement
+    }
+
     dispatch(setAuth({ user: null, roles: [], accessToken: '', refreshToken: '' }));
     localStorage.removeItem('encryptedAuthUser');
     localStorage.removeItem('encryptedAuthToken');
 
     try {
       if (userId) {
-        await apiClient.post('/auth/logout', { _id: userId });
+        await apiClient.post('/auth/logout', { _id: userId, refreshToken });
       }
     } catch {
-      // Ignore logout API errors
+      // Ignorer les erreurs API de logout
     }
 
     window.location.href = '/auth/signin';

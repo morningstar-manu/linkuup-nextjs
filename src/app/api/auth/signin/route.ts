@@ -31,18 +31,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = await User.findOne({ email }).populate('roles', '-__v').exec();
-    if (!user) {
+    // Validation des longueurs pour limiter les attaques
+    if (email.length > 254 || password.length > 128) {
       return NextResponse.json(
-        { success: false, message: 'User not found' },
-        { status: 404 }
+        { success: false, message: 'Identifiants invalides' },
+        { status: 400 }
       );
     }
 
-    const valid = bcrypt.compareSync(password, user.password);
+    const user = await User.findOne({ email: email.toLowerCase().trim() }).populate('roles', '-__v').exec();
+
+    // Message générique pour éviter l'énumération d'utilisateurs
+    const INVALID_CREDENTIALS_MSG = 'Identifiants invalides. Vérifiez votre email et mot de passe.';
+
+    if (!user) {
+      // Simuler un délai pour résister aux attaques de timing
+      await bcrypt.compare(password, '$2b$10$invalidhashfortimingattackprotection000000000000000000');
+      return NextResponse.json(
+        { success: false, message: INVALID_CREDENTIALS_MSG },
+        { status: 401 }
+      );
+    }
+
+    const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
       return NextResponse.json(
-        { success: false, message: 'Invalid password' },
+        { success: false, message: INVALID_CREDENTIALS_MSG },
         { status: 401 }
       );
     }
@@ -53,9 +67,6 @@ export async function POST(req: NextRequest) {
         { status: 403 }
       );
     }
-
-    user.isActive = true;
-    await user.save();
 
     const accessToken = createAccessToken(user._id.toString());
     const refreshToken = await (RefreshToken as unknown as { createToken: (u: { _id: unknown }) => Promise<string> }).createToken(user);

@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     if (verifyExpiration(storedToken)) {
       await RefreshToken.findByIdAndDelete(storedToken._id);
       return NextResponse.json(
-        { success: false, message: 'Refresh token expired. Please sign in again.' },
+        { success: false, message: 'Session expirée. Veuillez vous reconnecter.' },
         { status: 403 }
       );
     }
@@ -49,10 +49,14 @@ export async function POST(req: NextRequest) {
     const user = storedToken.user as { _id: { toString: () => string } };
     const newAccessToken = createAccessToken(user._id.toString());
 
+    // Rotation du refresh token : supprimer l'ancien et en créer un nouveau
+    await RefreshToken.findByIdAndDelete(storedToken._id);
+    const newRefreshToken = await (RefreshToken as unknown as { createToken: (u: { _id: unknown }) => Promise<string> }).createToken(user);
+
     return NextResponse.json({
       success: true,
       accessToken: newAccessToken,
-      refreshToken: storedToken.token,
+      refreshToken: newRefreshToken,
     });
   } catch (err) {
     console.error('Refresh token error:', err);

@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
+import RefreshToken from '@/lib/models/RefreshToken';
 
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
 
-    const { _id } = await req.json();
+    const body = await req.json();
+    const { _id, refreshToken } = body;
+
     if (!_id) {
       return NextResponse.json(
         { success: false, message: 'User ID required' },
@@ -13,9 +16,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Logout = invalidation côté client (suppression des tokens).
-    // On ne modifie pas isActive : ce champ indique si le compte est autorisé à se connecter.
-    return NextResponse.json({ success: true, message: 'Logout successful' });
+    // Invalider le refresh token en base pour empêcher toute réutilisation
+    if (refreshToken) {
+      await RefreshToken.deleteOne({ token: refreshToken }).exec();
+    } else {
+      // Si pas de token fourni, supprimer tous les refresh tokens de cet utilisateur
+      await RefreshToken.deleteMany({ user: _id }).exec();
+    }
+
+    return NextResponse.json({ success: true, message: 'Déconnexion réussie' });
   } catch (err) {
     console.error('Logout error:', err);
     return NextResponse.json(

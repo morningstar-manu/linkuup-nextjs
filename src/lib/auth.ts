@@ -27,7 +27,14 @@ export async function verifyToken(req: NextRequest): Promise<{ userId: string } 
 
 export async function requireAuth(req: NextRequest): Promise<{ userId: string }> {
   const result = await verifyToken(req);
-  if (!result) throw new Error('No token provided');
+  if (!result) throw new Error('Non authentifié');
+
+  // Vérifier que le compte est toujours actif
+  await connectDB();
+  const user = await User.findById(result.userId).select('isActive').exec();
+  if (!user) throw new Error('Compte introuvable');
+  if (user.isActive === false) throw new Error('Compte désactivé');
+
   return result;
 }
 

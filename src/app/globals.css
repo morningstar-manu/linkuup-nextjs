@@ -84,6 +84,16 @@ html:not(.dark) {
   to { opacity: 0; transform: translateX(20px); }
 }
 
+/* Respect de la préférence de réduction de mouvement */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Animation utility classes */
 @utility anim-pulse-soft {
   animation: pulse-soft 2s ease-in-out infinite;
@@ -121,6 +131,34 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-plus-jakarta), system-ui, sans-serif;
+  /* Défilement fluide sauf si l'utilisateur préfère sans mouvement */
+  scroll-behavior: smooth;
+}
+
+/* Accessibilité : skip to content */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.skip-to-content:focus {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  width: auto;
+  height: auto;
+  padding: 0.75rem 1.25rem;
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  z-index: 9999;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 /* Input base styles */
@@ -304,10 +342,20 @@ html:not(.dark) .table-row-hover:hover {
   background: rgba(63, 63, 70, 0.8);
 }
 
-/* Focus ring */
+/* Focus ring – visible au clavier uniquement */
 .focus-ring:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--primary);
+}
+
+/* Focus global pour les éléments interactifs */
+a:focus-visible,
+button:focus-visible,
+[role="menuitem"]:focus-visible,
+[tabindex="0"]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 0.375rem;
 }
 
 /* Glass effect */
