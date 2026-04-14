@@ -6,7 +6,6 @@ import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
 import { appointmentsApi } from '@/lib/api/appointments';
 import { getStatusLabel, getStatusColor } from '@/lib/utils/status';
 import { formatCommercialName } from '@/lib/utils/format';

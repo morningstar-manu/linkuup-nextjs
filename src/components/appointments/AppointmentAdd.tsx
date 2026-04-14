@@ -5,7 +5,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
 import { RootState, AppDispatch } from '@/lib/store';
 import { success, error } from '@/lib/store/slices/alertSlice';
 import { useCreateAppointment } from '@/lib/hooks/useAppointments';
