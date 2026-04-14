@@ -1,17 +1,18 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useTransition } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import DatePicker from 'react-datepicker';
 import { appointmentsApi } from '@/lib/api/appointments';
-import { getStatusLabel, getStatusColor } from '@/lib/utils/status';
+import { getStatusLabel, getStatusColor, STATUS_LABELS } from '@/lib/utils/status';
 import { formatCommercialName } from '@/lib/utils/format';
 import { formatSelectedDate } from '@/lib/utils/date';
 import { downloadAsCSV } from '@/lib/utils/csv';
 import { getErrorMessage } from '@/lib/utils/errors';
+import { useDebounce } from '@/lib/hooks/useDebounce';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
@@ -31,12 +32,15 @@ interface AppointmentDoc {
   commercial: string;
   status: string;
   comment?: string;
+  reminderDate?: string;
   createdAt?: string;
   userId?: { firstName?: string; lastName?: string };
 }
 
 const defaultStart = dayjs().startOf('isoWeek').toDate();
 const defaultEnd = dayjs().endOf('isoWeek').toDate();
+
+const STATUS_OPTIONS = Object.entries(STATUS_LABELS) as [string, string][];
 
 const STATUS_FILTERS = [
   { value: '', label: 'Tous' },
@@ -48,6 +52,59 @@ const STATUS_FILTERS = [
   { value: 'longest-date', label: 'Date éloignée' },
 ];
 
+/** Dropdown inline pour changer le statut directement depuis le tableau */
+function InlineStatusSelect({
+  appointmentId,
+  current,
+}: {
+  appointmentId: string;
+  current: string;
+}) {
+  const queryClient = useQueryClient();
+  const [value, setValue] = useState(current);
+  const [isPending, startTransition] = useTransition();
+
+  const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newStatus = e.target.value;
+    setValue(newStatus);
+    startTransition(async () => {
+      try {
+        await appointmentsApi.update(appointmentId, { status: newStatus });
+        queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      } catch {
+        setValue(current); // rollback
+      }
+    });
+  };
+
+  return (
+    <div className="relative inline-flex items-center gap-1">
+      {isPending && (
+        <span className="absolute -left-5 top-1/2 -translate-y-1/2">
+          <Spinner size="sm" />
+        </span>
+      )}
+      <select
+        value={value}
+        onChange={handleChange}
+        disabled={isPending}
+        className={`
+          cursor-pointer rounded-full border px-2.5 py-0.5 text-xs font-medium
+          transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/30
+          disabled:opacity-60
+          ${getStatusColor(value)}
+        `}
+      >
+        {STATUS_OPTIONS.map(([val, label]) => (
+          <option key={val} value={val} className="text-zinc-900 dark:text-zinc-100">
+            {label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 export function AppointmentAllList() {
   const [filterAgent, setFilterAgent] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -55,6 +112,9 @@ export function AppointmentAllList() {
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentDoc | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [startDate, endDate] = dateRange;
+
+  // Debounce de 300 ms sur la recherche agent
+  const debouncedAgent = useDebounce(filterAgent, 300);
 
   const startDateStr = startDate ? formatSelectedDate(startDate) : '';
   const endDateStr = endDate ? formatSelectedDate(endDate) : startDateStr;
@@ -76,13 +136,13 @@ export function AppointmentAllList() {
   const filteredAppointments = useMemo(() => {
     return docs.filter((item) => {
       const agentMatch =
-        !filterAgent ||
-        item.userId?.firstName?.toLowerCase().includes(filterAgent.toLowerCase()) ||
-        item.userId?.lastName?.toLowerCase().includes(filterAgent.toLowerCase());
+        !debouncedAgent ||
+        item.userId?.firstName?.toLowerCase().includes(debouncedAgent.toLowerCase()) ||
+        item.userId?.lastName?.toLowerCase().includes(debouncedAgent.toLowerCase());
       const statusMatch = !filterStatus || item.status === filterStatus;
       return agentMatch && statusMatch;
     });
-  }, [docs, filterAgent, filterStatus]);
+  }, [docs, debouncedAgent, filterStatus]);
 
   const sorted = [...filteredAppointments].sort(
     (a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
@@ -111,7 +171,7 @@ export function AppointmentAllList() {
               monthsShown={2}
             />
 
-            {/* Search agent */}
+            {/* Recherche agent avec debounce */}
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-400">
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -140,16 +200,14 @@ export function AppointmentAllList() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               }
-              onClick={() =>
-                downloadAsCSV(appointments as { docs?: AppointmentDoc[] }, titleDate ?? undefined)
-              }
+              onClick={() => downloadAsCSV(appointments as { docs?: AppointmentDoc[] }, titleDate ?? undefined)}
             >
               CSV
             </Button>
           </div>
         </div>
 
-        {/* Ligne 2 : filtre statut */}
+        {/* Ligne 2 : filtres statut en pills */}
         <div className="flex gap-1.5 overflow-x-auto px-5 pb-3 scrollbar-none">
           {STATUS_FILTERS.map((f) => (
             <button
@@ -190,7 +248,10 @@ export function AppointmentAllList() {
               <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400 md:table-cell">Téléphone</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Date RDV</th>
               <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400 lg:table-cell">Commercial</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Statut</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                Statut
+                <span className="ml-1 text-[10px] normal-case text-zinc-400">(modifiable)</span>
+              </th>
               <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">Actions</th>
             </tr>
           </thead>
@@ -216,6 +277,14 @@ export function AppointmentAllList() {
                   <span className="block truncate font-semibold text-zinc-900 dark:text-zinc-100">
                     {apt.name}
                   </span>
+                  {apt.reminderDate && (
+                    <span className="mt-0.5 flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400">
+                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Rappel {dayjs(apt.reminderDate).format('DD/MM')}
+                    </span>
+                  )}
                 </td>
 
                 <td className="hidden px-4 py-3 md:table-cell">
@@ -248,16 +317,14 @@ export function AppointmentAllList() {
                   </span>
                 </td>
 
+                {/* Quick-edit statut inline */}
                 <td className="px-4 py-3">
-                  <Badge className={getStatusColor(apt.status)}>
-                    {getStatusLabel(apt.status)}
-                  </Badge>
+                  <InlineStatusSelect appointmentId={apt._id} current={apt.status} />
                 </td>
 
                 {/* Actions : voir + modifier */}
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-1">
-                    {/* Voir */}
                     <button
                       onClick={() => openDrawer(apt)}
                       title="Voir les détails"
@@ -268,8 +335,6 @@ export function AppointmentAllList() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
                     </button>
-
-                    {/* Modifier */}
                     <Link
                       href={`/appointments/edit/${apt._id}`}
                       title="Modifier"
@@ -287,7 +352,6 @@ export function AppointmentAllList() {
         </table>
       </div>
 
-      {/* États vides / erreur / loading */}
       {isError && (
         <div className="m-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-500/20 dark:bg-red-500/10">
           <p className="font-semibold text-red-600 dark:text-red-400">Erreur de chargement</p>
@@ -317,7 +381,6 @@ export function AppointmentAllList() {
         />
       )}
 
-      {/* Drawer de détail */}
       <AppointmentDetailDrawer
         appointment={selectedAppointment}
         isOpen={drawerOpen}

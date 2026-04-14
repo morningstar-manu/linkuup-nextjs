@@ -44,6 +44,7 @@ export function AppointmentEdit() {
     phone_1: '',
     phone_2: '',
     time: '',
+    reminderDate: '',
   });
 
   const { data, isLoading, isError, error } = useQuery({
@@ -305,6 +306,29 @@ export function AppointmentEdit() {
                 onChange={handleChange}
               />
             </div>
+
+            {/* Date de rappel — visible uniquement si statut "à rappeler" */}
+            {formData.status === 'to-be-reminded' && (
+              <div>
+                <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  <svg className="h-4 w-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Date de rappel
+                </label>
+                <input
+                  type="date"
+                  name="reminderDate"
+                  value={formData.reminderDate ?? ''}
+                  onChange={handleChange}
+                  min={dayjs().format('YYYY-MM-DD')}
+                  className="block w-full rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-zinc-900 transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-zinc-100"
+                />
+                <p className="mt-1 text-xs text-zinc-500">
+                  Quand rappeler ce médecin ?
+                </p>
+              </div>
+            )}
 
             <div className="sm:col-span-2">
               <Textarea

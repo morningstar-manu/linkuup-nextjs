@@ -28,6 +28,8 @@ const appointmentSchema = new mongoose.Schema(
       ],
       default: 'pending',
     },
+    /** Date prévue pour rappeler le médecin (utilisé avec statut "to-be-reminded") */
+    reminderDate: { type: String, trim: true },
     version: { type: Number, default: 0 },
   },
   { timestamps: true }
