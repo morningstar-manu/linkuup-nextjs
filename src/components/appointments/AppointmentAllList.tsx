@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { EmptyState } from '@/components/ui/empty-state';
+import { AppointmentDetailDrawer } from './AppointmentDetailDrawer';
 
 dayjs.extend(isoWeek);
 
@@ -29,6 +30,7 @@ interface AppointmentDoc {
   time: string;
   commercial: string;
   status: string;
+  comment?: string;
   createdAt?: string;
   userId?: { firstName?: string; lastName?: string };
 }
@@ -36,9 +38,22 @@ interface AppointmentDoc {
 const defaultStart = dayjs().startOf('isoWeek').toDate();
 const defaultEnd = dayjs().endOf('isoWeek').toDate();
 
+const STATUS_FILTERS = [
+  { value: '', label: 'Tous' },
+  { value: 'pending', label: 'En attente' },
+  { value: 'confirmed', label: 'Confirmé' },
+  { value: 'cancelled', label: 'Annulé' },
+  { value: 'to-be-reminded', label: 'À rappeler' },
+  { value: 'not-interested', label: 'Non intéressé' },
+  { value: 'longest-date', label: 'Date éloignée' },
+];
+
 export function AppointmentAllList() {
   const [filterAgent, setFilterAgent] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([defaultStart, defaultEnd]);
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentDoc | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [startDate, endDate] = dateRange;
 
   const startDateStr = startDate ? formatSelectedDate(startDate) : '';
@@ -59,75 +74,106 @@ export function AppointmentAllList() {
   const totalDocs = (appointments as { totalDocs?: number })?.totalDocs ?? 0;
 
   const filteredAppointments = useMemo(() => {
-    if (!filterAgent) return docs;
-    const lower = filterAgent.toLowerCase();
-    return docs.filter(
-      (item) =>
-        item.userId?.firstName?.toLowerCase().includes(lower) ||
-        item.userId?.lastName?.toLowerCase().includes(lower)
-    );
-  }, [docs, filterAgent]);
+    return docs.filter((item) => {
+      const agentMatch =
+        !filterAgent ||
+        item.userId?.firstName?.toLowerCase().includes(filterAgent.toLowerCase()) ||
+        item.userId?.lastName?.toLowerCase().includes(filterAgent.toLowerCase());
+      const statusMatch = !filterStatus || item.status === filterStatus;
+      return agentMatch && statusMatch;
+    });
+  }, [docs, filterAgent, filterStatus]);
 
   const sorted = [...filteredAppointments].sort(
     (a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
   );
 
+  function openDrawer(apt: AppointmentDoc) {
+    setSelectedAppointment(apt);
+    setDrawerOpen(true);
+  }
+
   return (
-    <div>
+    <>
       {/* Barre de filtres */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200 bg-zinc-50 px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900/50">
-        <div className="flex flex-wrap items-center gap-3">
-          <DatePicker
-            selectsRange
-            startDate={startDate}
-            endDate={endDate}
-            onChange={(update: [Date | null, Date | null]) => setDateRange(update)}
-            dateFormat="dd/MM/yyyy"
-            placeholderText="Du … au …"
-            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
-            monthsShown={2}
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            icon={
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            }
-            onClick={() =>
-              downloadAsCSV(appointments as { docs?: AppointmentDoc[] }, titleDate ?? undefined)
-            }
-          >
-            Exporter CSV
-          </Button>
-          <span className="rounded-full bg-zinc-200 px-3 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
-            {totalDocs} RDV
-          </span>
+      <div className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
+        {/* Ligne 1 : date + agent + export */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <DatePicker
+              selectsRange
+              startDate={startDate}
+              endDate={endDate}
+              onChange={(update: [Date | null, Date | null]) => setDateRange(update)}
+              dateFormat="dd/MM/yyyy"
+              placeholderText="Du … au …"
+              className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
+              monthsShown={2}
+            />
+
+            {/* Search agent */}
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-400">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Agent…"
+                value={filterAgent}
+                onChange={(e) => setFilterAgent(e.target.value)}
+                className="rounded-lg border border-zinc-200 bg-white py-2 pl-9 pr-4 text-sm text-zinc-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
+              {totalDocs} RDV
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              }
+              onClick={() =>
+                downloadAsCSV(appointments as { docs?: AppointmentDoc[] }, titleDate ?? undefined)
+              }
+            >
+              CSV
+            </Button>
+          </div>
         </div>
 
-        <div className="relative">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-400">
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-          <input
-            type="text"
-            placeholder="Filtrer par agent…"
-            value={filterAgent}
-            onChange={(e) => setFilterAgent(e.target.value)}
-            className="rounded-lg border border-zinc-200 bg-white py-2 pl-9 pr-4 text-sm text-zinc-900 transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
-          />
+        {/* Ligne 2 : filtre statut */}
+        <div className="flex gap-1.5 overflow-x-auto px-5 pb-3 scrollbar-none">
+          {STATUS_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setFilterStatus(f.value)}
+              className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                filterStatus === f.value
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-zinc-200 text-zinc-600 hover:bg-zinc-300 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Compteur filtré */}
+      {/* Compteur */}
       {!isLoading && !isError && (
-        <div className="border-b border-zinc-200 bg-zinc-50/50 px-6 py-2 dark:border-zinc-800 dark:bg-zinc-900/30">
+        <div className="border-b border-zinc-100 bg-zinc-50/50 px-5 py-1.5 dark:border-zinc-800 dark:bg-zinc-900/30">
           <p className="text-xs text-zinc-500">
             {sorted.length} résultat{sorted.length !== 1 ? 's' : ''}
             {filterAgent ? ` pour « ${filterAgent} »` : ''}
+            {filterStatus ? ` · ${getStatusLabel(filterStatus)}` : ''}
           </p>
         </div>
       )}
@@ -136,62 +182,104 @@ export function AppointmentAllList() {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/80">
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">#</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Agent</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Saisi le</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Médecin</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Téléphone</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Date RDV</th>
-              <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500 md:table-cell">Commercial</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Statut</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Actions</th>
+            <tr className="border-b border-zinc-100 bg-zinc-50/80 dark:border-zinc-800 dark:bg-zinc-900/80">
+              <th className="w-8 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">#</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Agent</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Saisi le</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Médecin</th>
+              <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400 md:table-cell">Téléphone</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Date RDV</th>
+              <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400 lg:table-cell">Commercial</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Statut</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
             {sorted.map((apt, index) => (
               <tr
                 key={apt._id}
-                className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
+                className="group transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/30"
               >
                 <td className="px-4 py-3 text-xs text-zinc-400">{index + 1}</td>
-                <td className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">
-                  {apt.userId?.firstName} {apt.userId?.lastName}
+
+                <td className="px-4 py-3">
+                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                    {apt.userId?.firstName} {apt.userId?.lastName}
+                  </span>
                 </td>
-                <td className="px-4 py-3 text-zinc-500">{dayjs(apt.createdAt).format('DD/MM')}</td>
-                <td className="px-4 py-3 font-semibold text-zinc-900 dark:text-zinc-100">
-                  {apt.name.toUpperCase()}
+
+                <td className="px-4 py-3 text-xs text-zinc-500">
+                  {dayjs(apt.createdAt).format('DD/MM/YY')}
                 </td>
-                <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+
+                <td className="max-w-[160px] px-4 py-3">
+                  <span className="block truncate font-semibold text-zinc-900 dark:text-zinc-100">
+                    {apt.name}
+                  </span>
+                </td>
+
+                <td className="hidden px-4 py-3 md:table-cell">
                   <div className="flex flex-col gap-0.5">
-                    {apt.phone_1 && <span>{apt.phone_1}</span>}
-                    {apt.phone_2 && <span className="text-xs text-zinc-400">{apt.phone_2}</span>}
+                    {apt.phone_1 && (
+                      <a href={`tel:${apt.phone_1}`} className="text-xs text-zinc-600 hover:text-emerald-600 dark:text-zinc-400 dark:hover:text-emerald-400">
+                        {apt.phone_1}
+                      </a>
+                    )}
+                    {apt.phone_2 && (
+                      <a href={`tel:${apt.phone_2}`} className="text-xs text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400">
+                        {apt.phone_2}
+                      </a>
+                    )}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
+
+                <td className="px-4 py-3">
                   <div className="flex flex-col gap-0.5">
-                    <span className="font-medium">{dayjs(apt.date).format('DD/MM/YYYY')}</span>
+                    <span className="text-xs font-medium text-zinc-700 dark:text-zinc-200">
+                      {dayjs(apt.date).format('DD/MM/YYYY')}
+                    </span>
                     <span className="text-xs text-zinc-400">{apt.time}</span>
                   </div>
                 </td>
-                <td className="hidden max-w-[100px] truncate px-4 py-3 text-zinc-500 md:table-cell">
-                  {formatCommercialName(apt.commercial)}
+
+                <td className="hidden max-w-[110px] px-4 py-3 lg:table-cell">
+                  <span className="block truncate text-xs text-zinc-500">
+                    {formatCommercialName(apt.commercial)}
+                  </span>
                 </td>
+
                 <td className="px-4 py-3">
                   <Badge className={getStatusColor(apt.status)}>
                     {getStatusLabel(apt.status)}
                   </Badge>
                 </td>
+
+                {/* Actions : voir + modifier */}
                 <td className="px-4 py-3">
-                  <Link
-                    href={`/appointments/edit/${apt._id}`}
-                    className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-500/10"
-                  >
-                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    Modifier
-                  </Link>
+                  <div className="flex items-center justify-end gap-1">
+                    {/* Voir */}
+                    <button
+                      onClick={() => openDrawer(apt)}
+                      title="Voir les détails"
+                      className="rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </button>
+
+                    {/* Modifier */}
+                    <Link
+                      href={`/appointments/edit/${apt._id}`}
+                      title="Modifier"
+                      className="rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -199,10 +287,10 @@ export function AppointmentAllList() {
         </table>
       </div>
 
-      {/* États */}
+      {/* États vides / erreur / loading */}
       {isError && (
-        <div className="m-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-500/20 dark:bg-red-500/10">
-          <p className="font-medium text-red-600 dark:text-red-400">Erreur de chargement</p>
+        <div className="m-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-500/20 dark:bg-red-500/10">
+          <p className="font-semibold text-red-600 dark:text-red-400">Erreur de chargement</p>
           <p className="mt-1 text-sm text-red-500/80">{getErrorMessage(error)}</p>
         </div>
       )}
@@ -222,12 +310,19 @@ export function AppointmentAllList() {
           }
           title="Aucun rendez-vous"
           description={
-            filterAgent
-              ? `Aucun résultat pour « ${filterAgent} » sur cette période.`
+            filterAgent || filterStatus
+              ? 'Aucun résultat pour les filtres sélectionnés.'
               : 'Aucun rendez-vous trouvé pour la période sélectionnée.'
           }
         />
       )}
-    </div>
+
+      {/* Drawer de détail */}
+      <AppointmentDetailDrawer
+        appointment={selectedAppointment}
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
+    </>
   );
 }

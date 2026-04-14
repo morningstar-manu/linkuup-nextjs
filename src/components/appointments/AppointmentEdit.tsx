@@ -116,6 +116,8 @@ export function AppointmentEdit() {
     );
   }
 
+  const apt = appointment as Appointment;
+
   return (
     <div className="space-y-6">
       {/* En-tête */}
@@ -124,11 +126,11 @@ export function AppointmentEdit() {
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
             Modifier le rendez-vous
           </h1>
-          {(appointment as Appointment)?.userId?.firstName && (
+          {apt?.userId?.firstName && (
             <p className="mt-1 text-sm text-zinc-500">
               Saisi par{' '}
               <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                {(appointment as Appointment).userId?.firstName}
+                {apt.userId?.firstName} {apt.userId?.lastName}
               </span>
             </p>
           )}
@@ -140,6 +142,74 @@ export function AppointmentEdit() {
           Retour
         </Button>
       </div>
+
+      {/* Récapitulatif lecture-seule */}
+      {apt?._id && (
+        <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            Données actuelles
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <p className="text-xs text-zinc-400">Médecin</p>
+              <p className="mt-0.5 font-semibold text-zinc-900 dark:text-zinc-100">{apt.name}</p>
+            </div>
+            <div>
+              <p className="text-xs text-zinc-400">Date &amp; Heure</p>
+              <p className="mt-0.5 font-semibold text-zinc-900 dark:text-zinc-100">
+                {dayjs(apt.date).format('DD/MM/YYYY')} · {apt.time}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-zinc-400">Statut actuel</p>
+              <span
+                className={`mt-1 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                  apt.status === 'confirmed'
+                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                    : apt.status === 'cancelled'
+                    ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                    : apt.status === 'pending'
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                    : apt.status === 'to-be-reminded'
+                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                    : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                }`}
+              >
+                {apt.status === 'confirmed'
+                  ? 'Confirmé'
+                  : apt.status === 'cancelled'
+                  ? 'Annulé'
+                  : apt.status === 'pending'
+                  ? 'En attente'
+                  : apt.status === 'to-be-reminded'
+                  ? 'À rappeler'
+                  : apt.status === 'not-interested'
+                  ? 'Non intéressé'
+                  : apt.status === 'longest-date'
+                  ? 'Date éloignée'
+                  : apt.status}
+              </span>
+            </div>
+            {apt.phone_1 && (
+              <div>
+                <p className="text-xs text-zinc-400">Téléphone</p>
+                <a
+                  href={`tel:${apt.phone_1}`}
+                  className="mt-0.5 block font-semibold text-emerald-600 hover:underline dark:text-emerald-400"
+                >
+                  {apt.phone_1}
+                </a>
+              </div>
+            )}
+          </div>
+          {apt.comment && (
+            <div className="mt-3 border-t border-zinc-200 pt-3 dark:border-zinc-700">
+              <p className="text-xs text-zinc-400">Commentaire</p>
+              <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">{apt.comment}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Formulaire */}
       <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
