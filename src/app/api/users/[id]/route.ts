@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import connectDB from '@/lib/db';
 import User from '@/lib/models/User';
 import Role from '@/lib/models/Role';
 import { requireAdmin, requireAuth } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
 
-const SALT_ROUNDS = 10;
+const SALT_ROUNDS = 12; // Unifié avec route.ts
+
+const updateUserSchema = z.object({
+  firstName: z.string().min(1).max(100).trim().optional(),
+  lastName: z.string().min(1).max(100).trim().optional(),
+  email: z.string().email().max(254).toLowerCase().optional(),
+  password: z.string().min(8).max(128).optional().or(z.literal('')),
+  roles: z.array(z.string()).min(1).optional(),
+  isActive: z.boolean().optional(),
+});
 
 function formatUserWithRoles(user: {
   _id: { toString: () => string };
@@ -14,15 +24,16 @@ function formatUserWithRoles(user: {
   email: string;
   roles: { name: string }[];
   isActive?: boolean;
+  createdAt?: Date;
 }) {
-  const authorities = user.roles.map((r) => `ROLE_${r.name.toUpperCase()}`);
   return {
     id: user._id.toString(),
     firstName: user.firstName,
     lastName: user.lastName,
     email: user.email,
-    roles: authorities,
+    roles: user.roles.map((r) => `ROLE_${r.name.toUpperCase()}`),
     isActive: user.isActive,
+    createdAt: user.createdAt,
   };
 }
 
@@ -38,19 +49,13 @@ export async function GET(
     const user = await User.findById(id).populate('roles', '-__v').exec();
 
     if (!user) {
-      return NextResponse.json(
-        { success: false, message: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: 'Utilisateur introuvable' }, { status: 404 });
     }
 
     return NextResponse.json(formatUserWithRoles(user as never));
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unauthorized';
-    return NextResponse.json(
-      { success: false, message: msg },
-      { status: msg.includes('token') ? 403 : 500 }
-    );
+    return NextResponse.json({ success: false, message: msg }, { status: msg.includes('token') ? 403 : 500 });
   }
 }
 
@@ -63,21 +68,42 @@ export async function PUT(
     await connectDB();
 
     const { id } = await params;
-    const data = await req.json();
+    const body = await req.json().catch(() => ({}));
 
-    const update: Record<string, unknown> = {};
-    if (data.firstName !== undefined) update.firstName = data.firstName;
-    if (data.lastName !== undefined) update.lastName = data.lastName;
-    if (data.email !== undefined) update.email = data.email;
-    if (data.isActive !== undefined) update.isActive = data.isActive;
-
-    if (data.roles?.length) {
-      const roles = await Role.find({ name: { $in: data.roles } });
-      update.roles = roles.map((r) => r._id);
+    const parsed = updateUserSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, message: 'Données invalides', errors: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
     }
 
-    if (data.password?.trim()) {
-      update.password = bcrypt.hashSync(data.password, SALT_ROUNDS);
+    const { firstName, lastName, email, password, roles, isActive } = parsed.data;
+    const update: Record<string, unknown> = {};
+
+    if (firstName !== undefined) update.firstName = firstName;
+    if (lastName !== undefined) update.lastName = lastName;
+    if (isActive !== undefined) update.isActive = isActive;
+
+    if (email !== undefined) {
+      // Vérifier unicité si l'email change
+      const conflict = await User.findOne({ email, _id: { $ne: id } });
+      if (conflict) {
+        return NextResponse.json({ success: false, message: 'Cet email est déjà utilisé par un autre compte.' }, { status: 409 });
+      }
+      update.email = email;
+    }
+
+    if (roles?.length) {
+      const roleDocs = await Role.find({ name: { $in: roles } });
+      if (roleDocs.length !== roles.length) {
+        return NextResponse.json({ success: false, message: 'Rôle(s) invalide(s).' }, { status: 400 });
+      }
+      update.roles = roleDocs.map((r) => r._id);
+    }
+
+    if (password && password.trim()) {
+      update.password = bcrypt.hashSync(password.trim(), SALT_ROUNDS);
     }
 
     const user = await User.findByIdAndUpdate(id, { $set: update }, { new: true })
@@ -85,19 +111,13 @@ export async function PUT(
       .exec();
 
     if (!user) {
-      return NextResponse.json(
-        { success: false, message: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: 'Utilisateur introuvable' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, message: 'User updated successfully' });
+    return NextResponse.json({ success: true, message: 'Utilisateur mis à jour avec succès.', user: formatUserWithRoles(user as never) });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Unauthorized';
-    return NextResponse.json(
-      { success: false, message: msg },
-      { status: msg.includes('token') || msg.includes('role') ? 403 : 500 }
-    );
+    const msg = err instanceof Error ? err.message : 'Erreur';
+    return NextResponse.json({ success: false, message: msg }, { status: msg.includes('authentifié') || msg.includes('rôle') ? 403 : 500 });
   }
 }
 
@@ -113,18 +133,12 @@ export async function DELETE(
     const user = await User.findByIdAndDelete(id);
 
     if (!user) {
-      return NextResponse.json(
-        { success: false, message: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: 'Utilisateur introuvable' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, message: 'User deleted successfully' });
+    return NextResponse.json({ success: true, message: 'Utilisateur supprimé avec succès.' });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Unauthorized';
-    return NextResponse.json(
-      { success: false, message: msg },
-      { status: msg.includes('token') || msg.includes('role') ? 403 : 500 }
-    );
+    const msg = err instanceof Error ? err.message : 'Erreur';
+    return NextResponse.json({ success: false, message: msg }, { status: msg.includes('authentifié') ? 403 : 500 });
   }
 }

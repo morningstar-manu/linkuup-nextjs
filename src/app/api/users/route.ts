@@ -17,6 +17,7 @@ const createUserSchema = z.object({
     .min(8, 'Mot de passe : 8 caractères minimum')
     .max(128),
   roles: z.array(z.string()).optional().default(['user']),
+  isActive: z.boolean().optional().default(false),
 });
 
 function formatUserWithRoles(user: {
@@ -26,6 +27,7 @@ function formatUserWithRoles(user: {
   email: string;
   roles: { name: string }[];
   isActive?: boolean;
+  createdAt?: Date;
 }) {
   return {
     id: user._id.toString(),
@@ -34,6 +36,7 @@ function formatUserWithRoles(user: {
     email: user.email,
     roles: user.roles.map((r) => `ROLE_${r.name.toUpperCase()}`),
     isActive: user.isActive,
+    createdAt: user.createdAt,
   };
 }
 
@@ -41,7 +44,7 @@ export async function GET(req: NextRequest) {
   try {
     await requireAdmin(req);
     await connectDB();
-    const users = await User.find().populate('roles', '-__v').exec();
+    const users = await User.find().populate('roles', '-__v').sort({ createdAt: -1 }).exec();
     return NextResponse.json(users.map((u) => formatUserWithRoles(u as never)));
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Erreur';
@@ -64,7 +67,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { firstName, lastName, email, password, roles } = parsed.data;
+    const { firstName, lastName, email, password, roles, isActive } = parsed.data;
 
     const existing = await User.findOne({ email });
     if (existing) {
@@ -83,7 +86,7 @@ export async function POST(req: NextRequest) {
       email,
       password: bcrypt.hashSync(password, SALT_ROUNDS),
       roles: roleDocs.map((r) => r._id),
-      isActive: true,
+      isActive: isActive ?? false,
     });
     await user.save();
 
