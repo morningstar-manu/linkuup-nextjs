@@ -1,36 +1,20 @@
 'use client';
 
 import axios, { AxiosError } from 'axios';
-import CryptoJS from 'crypto-js';
 import { getErrorMessage } from '@/lib/utils/errors';
 
-const ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY || 'default-key-change-me';
-
-type TokenData = { accessToken: string; refreshToken: string };
-
-function getLocalTokenData(): TokenData {
-  if (typeof window === 'undefined') return { accessToken: '', refreshToken: '' };
-  const encrypted = localStorage.getItem('encryptedAuthToken');
-  if (!encrypted) return { accessToken: '', refreshToken: '' };
-
-  try {
-    const decrypted = CryptoJS.AES.decrypt(encrypted, ENCRYPTION_KEY);
-    const serialized = decrypted.toString(CryptoJS.enc.Utf8);
-    return JSON.parse(serialized) as TokenData;
-  } catch {
-    return { accessToken: '', refreshToken: '' };
-  }
-}
-
-function setLocalTokenData(accessToken: string, refreshToken: string): void {
-  const serialized = JSON.stringify({ accessToken, refreshToken });
-  const encrypted = CryptoJS.AES.encrypt(serialized, ENCRYPTION_KEY).toString();
-  localStorage.setItem('encryptedAuthToken', encrypted);
-}
-
+/**
+ * Client HTTP centralisé.
+ *
+ * Les tokens JWT sont stockés dans des cookies httpOnly gérés par le serveur.
+ * Le navigateur les envoie automatiquement grâce à `withCredentials: true`.
+ * Aucun token n'est accessible au JavaScript côté client → protection XSS maximale.
+ */
 export const apiClient = axios.create({
   baseURL: '/api',
+  withCredentials: true,          // Envoie les cookies httpOnly automatiquement
   headers: { 'Content-Type': 'application/json' },
+  timeout: 15_000,                // 15 secondes max
 });
 
 let onUnauthorized: (() => void) | null = null;
@@ -39,42 +23,36 @@ export function setApiUnauthorizedHandler(handler: () => void): void {
   onUnauthorized = handler;
 }
 
-apiClient.interceptors.request.use(
-  (config) => {
-    const { accessToken } = getLocalTokenData();
-    if (accessToken) {
-      config.headers['x-access-token'] = accessToken;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
+// ─── Intercepteur de réponse ───────────────────────────────────────────────
 apiClient.interceptors.response.use(
   (res) => res,
   async (err: AxiosError) => {
     const originalConfig = err.config as typeof err.config & { _retry?: boolean };
 
-    if (err.response?.status === 401 && !originalConfig?._retry) {
+    // Pas de réponse du tout → problème réseau
+    if (!err.response) {
+      return Promise.reject(
+        new Error('Impossible de joindre le serveur. Vérifiez votre connexion.')
+      );
+    }
+
+    // 401 : token expiré → tenter un refresh automatique (cookie httpOnly)
+    if (err.response.status === 401 && !originalConfig?._retry) {
       originalConfig._retry = true;
 
       try {
-        const { refreshToken } = getLocalTokenData();
-        const { data } = await apiClient.post<{ accessToken: string; refreshToken: string }>(
-          '/auth/refreshtoken',
-          { refreshToken }
-        );
-        apiClient.defaults.headers.common['x-access-token'] = data.accessToken;
-        setLocalTokenData(data.accessToken, data.refreshToken);
+        // Le cookie refreshToken est envoyé automatiquement par le navigateur
+        await apiClient.post('/auth/refreshtoken');
+        // Nouveau accessToken cookie posé par le serveur → relancer la requête originale
         return apiClient(originalConfig!);
-      } catch (refreshErr) {
+      } catch {
         onUnauthorized?.();
-        const msg = getErrorMessage(refreshErr);
-        return Promise.reject(new Error(msg));
+        return Promise.reject(new Error('Session expirée. Veuillez vous reconnecter.'));
       }
     }
 
-    if (err.response?.status === 403) {
+    // 403 : accès refusé (compte désactivé, rôle insuffisant)
+    if (err.response.status === 403) {
       onUnauthorized?.();
     }
 

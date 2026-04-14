@@ -1,10 +1,7 @@
 'use client';
 
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import CryptoJS from 'crypto-js';
 import { apiClient } from '@/lib/api-client';
-
-const ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY || 'default-key-change-me';
 
 export interface User {
   id?: string;
@@ -28,46 +25,32 @@ const initialState: AuthState = {
   loading: false,
 };
 
+const SESSION_KEY = 'authSession';
+
+/** Charge les données de profil (non-sensibles) depuis localStorage. */
 function loadFromStorage(): AuthState {
   if (typeof window === 'undefined') return initialState;
   try {
-    const encryptedUser = localStorage.getItem('encryptedAuthUser');
-    const encryptedToken = localStorage.getItem('encryptedAuthToken');
-    if (!encryptedUser || !encryptedToken) return initialState;
-
-    const decryptedUser = CryptoJS.AES.decrypt(encryptedUser, ENCRYPTION_KEY);
-    const decryptedToken = CryptoJS.AES.decrypt(encryptedToken, ENCRYPTION_KEY);
-    const { userlog, roles } = JSON.parse(decryptedUser.toString(CryptoJS.enc.Utf8));
-    const { accessToken } = JSON.parse(decryptedToken.toString(CryptoJS.enc.Utf8));
-
-    const rawId = userlog?.id ?? (userlog as { _id?: string })?._id;
-    const normalizedUser = userlog
-      ? { ...userlog, id: typeof rawId === 'string' ? rawId : rawId?.toString?.() ?? '' }
-      : null;
-    return {
-      user: normalizedUser,
-      roles: roles ?? [],
-      isLogged: !!accessToken,
-      loading: false,
-    };
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return initialState;
+    const { user, roles } = JSON.parse(raw) as { user: User; roles: string[] };
+    if (!user) return initialState;
+    return { user, roles: roles ?? [], isLogged: true, loading: false };
   } catch {
     return initialState;
   }
 }
 
-function encryptAndStore(
-  userlog: User,
-  roles: string[],
-  accessToken: string,
-  refreshToken: string
-): void {
-  const serializedUser = JSON.stringify({ userlog, roles });
-  const serializedToken = JSON.stringify({ accessToken, refreshToken });
-  const encryptedUser = CryptoJS.AES.encrypt(serializedUser, ENCRYPTION_KEY).toString();
-  const encryptedToken = CryptoJS.AES.encrypt(serializedToken, ENCRYPTION_KEY).toString();
-  localStorage.setItem('encryptedAuthUser', encryptedUser);
-  localStorage.setItem('encryptedAuthToken', encryptedToken);
+/** Persiste uniquement les données de profil (jamais les tokens). */
+function saveSession(user: User, roles: string[]): void {
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ user, roles }));
 }
+
+function clearSession(): void {
+  localStorage.removeItem(SESSION_KEY);
+}
+
+// ─── Thunks ────────────────────────────────────────────────────────────────
 
 export const signin = createAsyncThunk<
   void,
@@ -78,17 +61,21 @@ export const signin = createAsyncThunk<
     const { data } = await apiClient.post<{
       userlog: User;
       roles: string[];
-      accessToken: string;
-      refreshToken: string;
     }>('/auth/signin', { email, password });
 
-    const { userlog, roles, accessToken, refreshToken } = data;
-    encryptAndStore(userlog, roles, accessToken, refreshToken);
+    const { userlog, roles } = data;
 
-    dispatch(setAuth({ user: userlog, roles, accessToken, refreshToken }));
+    // Normaliser l'ID utilisateur
+    const rawId = userlog?.id ?? (userlog as { _id?: string })?._id;
+    const user: User = {
+      ...userlog,
+      id: typeof rawId === 'string' ? rawId : rawId?.toString?.() ?? '',
+    };
+
+    saveSession(user, roles);
+    dispatch(setAuth({ user, roles }));
   } catch (err: unknown) {
-    const message =
-      err instanceof Error ? err.message : 'Authentication failed';
+    const message = err instanceof Error ? err.message : "Échec de l'authentification";
     return rejectWithValue(message);
   }
 });
@@ -99,53 +86,39 @@ export const logout = createAsyncThunk(
     const state = getState() as { auth: AuthState };
     const userId = state.auth.user?.id;
 
-    // Récupérer le refresh token avant de vider le storage
-    let refreshToken: string | undefined;
-    try {
-      const encrypted = localStorage.getItem('encryptedAuthToken');
-      if (encrypted) {
-        const ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY || 'default-key-change-me';
-        const CryptoJS = (await import('crypto-js')).default;
-        const decrypted = CryptoJS.AES.decrypt(encrypted, ENCRYPTION_KEY);
-        const parsed = JSON.parse(decrypted.toString(CryptoJS.enc.Utf8));
-        refreshToken = parsed?.refreshToken;
-      }
-    } catch {
-      // Ignorer les erreurs de déchiffrement
-    }
-
-    dispatch(setAuth({ user: null, roles: [], accessToken: '', refreshToken: '' }));
-    localStorage.removeItem('encryptedAuthUser');
-    localStorage.removeItem('encryptedAuthToken');
+    // Vider l'état Redux et le localStorage immédiatement
+    dispatch(clearAuth());
+    clearSession();
 
     try {
-      if (userId) {
-        await apiClient.post('/auth/logout', { _id: userId, refreshToken });
-      }
+      // Le serveur invalide le refreshToken en base et efface les cookies
+      await apiClient.post('/auth/logout', { _id: userId });
     } catch {
-      // Ignorer les erreurs API de logout
+      // Ignorer — la session est déjà effacée côté client
     }
 
     window.location.href = '/auth/signin';
   }
 );
 
+// ─── Slice ─────────────────────────────────────────────────────────────────
+
 const authSlice = createSlice({
   name: 'auth',
   initialState: loadFromStorage(),
   reducers: {
-    setAuth: (state, action) => {
-      const { userlog, roles, accessToken } = action.payload;
-      const rawId = userlog?.id ?? (userlog as { _id?: string })?._id;
-      const normalizedUser = userlog
-        ? { ...userlog, id: typeof rawId === 'string' ? rawId : rawId?.toString?.() ?? '' }
-        : null;
-      state.user = normalizedUser;
-      state.roles = roles ?? [];
-      state.isLogged = !!accessToken;
+    setAuth: (state, action: { payload: { user: User | null; roles: string[] } }) => {
+      state.user = action.payload.user;
+      state.roles = action.payload.roles ?? [];
+      state.isLogged = !!action.payload.user;
+    },
+    clearAuth: (state) => {
+      state.user = null;
+      state.roles = [];
+      state.isLogged = false;
     },
   },
 });
 
-export const { setAuth } = authSlice.actions;
+export const { setAuth, clearAuth } = authSlice.actions;
 export default authSlice.reducer;
