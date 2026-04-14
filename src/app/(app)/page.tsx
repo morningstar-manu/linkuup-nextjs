@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store';
 import { AppointmentList } from '@/components/appointments/AppointmentList';
 import { AppointmentAdd } from '@/components/appointments/AppointmentAdd';
+import { TodayAppointments } from '@/components/appointments/TodayAppointments';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
@@ -78,6 +79,9 @@ export default function HomePage() {
           </Button>
         </div>
       </div>
+
+      {/* RDV du jour + nudge */}
+      <TodayAppointments refreshTrigger={refreshTrigger} />
 
       {/* Statistiques */}
       <DashboardStats refreshTrigger={refreshTrigger} />

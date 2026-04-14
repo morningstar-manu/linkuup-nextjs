@@ -1,10 +1,20 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import Link from 'next/link';
 import dayjs from 'dayjs';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
 import { getStatusLabel, getStatusColor } from '@/lib/utils/status';
 import { formatCommercialName } from '@/lib/utils/format';
+
+interface HistoryEntry {
+  _id: string;
+  action: 'created' | 'updated' | 'deleted';
+  changes: Record<string, { from: unknown; to: unknown }>;
+  createdAt: string;
+  actorId?: { firstName?: string; lastName?: string };
+}
 
 interface AppointmentDoc {
   _id: string;
@@ -17,6 +27,7 @@ interface AppointmentDoc {
   commercial: string;
   status: string;
   comment?: string;
+  reminderDate?: string;
   createdAt?: string;
   userId?: { firstName?: string; lastName?: string };
 }
@@ -54,6 +65,19 @@ export function AppointmentDetailDrawer({
   isOpen,
   onClose,
 }: AppointmentDetailDrawerProps) {
+  const [showHistory, setShowHistory] = useState(false);
+
+  const { data: historyData } = useQuery({
+    queryKey: ['appointments', appointment?._id, 'history'],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`appointments/${appointment!._id}/history`);
+      return data;
+    },
+    enabled: !!appointment?._id && showHistory,
+  });
+
+  const history: HistoryEntry[] = historyData?.history ?? [];
+
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -247,6 +271,21 @@ export function AppointmentDetailDrawer({
                 </InfoRow>
               )}
 
+              {apt.reminderDate && (
+                <InfoRow
+                  label="Date de rappel"
+                  icon={
+                    <svg className="h-4 w-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  }
+                >
+                  <span className="font-semibold text-amber-600 dark:text-amber-400">
+                    {dayjs(apt.reminderDate).format('DD MMMM YYYY')}
+                  </span>
+                </InfoRow>
+              )}
+
               {apt.comment && (
                 <InfoRow
                   label="Commentaire"
@@ -262,6 +301,54 @@ export function AppointmentDetailDrawer({
                 </InfoRow>
               )}
             </div>
+          </div>
+
+          {/* Section : Historique des modifications */}
+          <div className="border-t border-zinc-100 px-5 py-4 dark:border-zinc-800/60">
+            <button
+              onClick={() => setShowHistory((v) => !v)}
+              className="flex w-full items-center justify-between text-xs font-semibold uppercase tracking-wider text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+            >
+              <span>Historique des modifications</span>
+              <svg
+                className={`h-4 w-4 transition-transform ${showHistory ? 'rotate-180' : ''}`}
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {showHistory && (
+              <div className="mt-3 space-y-2">
+                {history.length === 0 && (
+                  <p className="text-xs text-zinc-500">Aucune modification enregistrée.</p>
+                )}
+                {history.map((h) => (
+                  <div key={h._id} className="flex gap-2.5 text-xs">
+                    <div className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-zinc-400" />
+                    <div>
+                      <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                        {h.actorId
+                          ? `${h.actorId.firstName ?? ''} ${h.actorId.lastName ?? ''}`.trim()
+                          : 'Système'}
+                      </span>
+                      {' — '}
+                      {h.action === 'created' && 'a créé ce RDV'}
+                      {h.action === 'deleted' && 'a supprimé ce RDV'}
+                      {h.action === 'updated' &&
+                        Object.entries(h.changes)
+                          .map(([field, { from, to }]) =>
+                            `${field}: "${from}" → "${to}"`
+                          )
+                          .join(', ')}
+                      <span className="ml-1.5 text-zinc-400">
+                        {dayjs(h.createdAt).format('DD/MM/YY HH:mm')}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

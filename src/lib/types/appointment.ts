@@ -17,6 +17,8 @@ export interface Appointment {
   commercial: string;
   status: AppointmentStatus;
   comment?: string;
+  /** Date de rappel (YYYY-MM-DD) — visible quand status = 'to-be-reminded' */
+  reminderDate?: string;
   createdAt?: string;
   userId?: {
     id?: string;
