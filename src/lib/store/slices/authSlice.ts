@@ -65,11 +65,11 @@ export const signin = createAsyncThunk<
 
     const { userlog, roles } = data;
 
-    // Normaliser l'ID utilisateur
+    // Normaliser l'ID utilisateur (id ou _id selon la version de l'API)
     const rawId = userlog?.id ?? (userlog as { _id?: string })?._id;
     const user: User = {
       ...userlog,
-      id: typeof rawId === 'string' ? rawId : rawId?.toString?.() ?? '',
+      id: rawId != null ? String(rawId) : '',
     };
 
     saveSession(user, roles);
