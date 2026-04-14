@@ -57,10 +57,10 @@ const FEATURES = [
 
 const STATUSES = [
   { label: 'En attente', color: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400', description: 'RDV créé, en attente de confirmation.' },
-  { label: 'Confirmé', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400', description: 'RDV confirmé par le patient.' },
+  { label: 'Confirmé', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400', description: 'RDV confirmé par le médecin.' },
   { label: 'Annulé', color: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400', description: 'RDV annulé.' },
-  { label: 'Pas intéressé', color: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400', description: 'Le patient n\'est pas intéressé.' },
-  { label: 'À rappeler', color: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400', description: 'Patient à recontacter ultérieurement.' },
+  { label: 'Pas intéressé', color: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400', description: 'Le médecin n\'est pas intéressé.' },
+  { label: 'À rappeler', color: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400', description: 'Médecin à recontacter ultérieurement.' },
   { label: 'Long délai', color: 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400', description: 'RDV prévu dans un délai éloigné.' },
 ];
 

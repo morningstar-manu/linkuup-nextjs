@@ -14,14 +14,15 @@ import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
+import { ConfirmModal } from '@/components/ui/modal';
 
 const STATUS_OPTIONS: { value: AppointmentStatus; label: string }[] = [
-  { value: 'confirmed', label: 'Confirme' },
-  { value: 'pending', label: 'En Attente' },
-  { value: 'cancelled', label: 'Annule' },
-  { value: 'not-interested', label: 'Pas Interesse' },
-  { value: 'to-be-reminded', label: 'A Rappeler' },
-  { value: 'longest-date', label: 'Date Eloignee' },
+  { value: 'confirmed', label: 'Confirmé' },
+  { value: 'pending', label: 'En attente' },
+  { value: 'cancelled', label: 'Annulé' },
+  { value: 'not-interested', label: 'Pas intéressé' },
+  { value: 'to-be-reminded', label: 'À rappeler' },
+  { value: 'longest-date', label: 'Date éloignée' },
 ];
 
 export function AppointmentEdit() {
@@ -31,6 +32,7 @@ export function AppointmentEdit() {
   const updateMutation = useUpdateAppointment();
   const deleteMutation = useDeleteAppointment();
   const { data: commercials = [] } = useCommercials();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const [formData, setFormData] = useState<Partial<Appointment>>({
     date: dayjs().format('YYYY-MM-DD'),
@@ -78,27 +80,25 @@ export function AppointmentEdit() {
     if (!id) return;
     try {
       await updateMutation.mutateAsync({ id, data: formData });
-      router.back();
+      router.push('/admin');
     } catch {
-      // Error handled by mutation
+      // Erreur gérée par la mutation
     }
   };
 
   const handleDelete = async () => {
     if (!id) return;
-    if (window.confirm('Etes-vous sur de vouloir supprimer ce rendez-vous ?')) {
-      try {
-        await deleteMutation.mutateAsync(id);
-        router.back();
-      } catch {
-        // Error handled by mutation
-      }
+    try {
+      await deleteMutation.mutateAsync(id);
+      router.push('/admin');
+    } catch {
+      // Erreur gérée par la mutation
     }
   };
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-12">
+      <div className="flex justify-center py-16">
         <Spinner size="lg" />
       </div>
     );
@@ -106,9 +106,9 @@ export function AppointmentEdit() {
 
   if (isError) {
     return (
-      <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-6">
-        <h2 className="text-lg font-semibold text-red-400">Erreur de chargement</h2>
-        <p className="mt-2 text-sm text-red-400/80">{getErrorMessage(error)}</p>
+      <div className="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-500/20 dark:bg-red-500/10">
+        <h2 className="text-lg font-semibold text-red-600 dark:text-red-400">Erreur de chargement</h2>
+        <p className="mt-2 text-sm text-red-500">{getErrorMessage(error)}</p>
         <Button variant="outline" onClick={() => router.back()} className="mt-4">
           Retour
         </Button>
@@ -118,14 +118,31 @@ export function AppointmentEdit() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">
-        Modifier le rendez-vous
-      </h1>
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
-        <p className="mb-6 text-sm text-zinc-400">
-          Rendez-vous pris par {appointment?.userId?.firstName}
-        </p>
+      {/* En-tête */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+            Modifier le rendez-vous
+          </h1>
+          {(appointment as Appointment)?.userId?.firstName && (
+            <p className="mt-1 text-sm text-zinc-500">
+              Saisi par{' '}
+              <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                {(appointment as Appointment).userId?.firstName}
+              </span>
+            </p>
+          )}
+        </div>
+        <Button variant="ghost" size="sm" onClick={() => router.push('/admin')}>
+          <svg className="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Retour
+        </Button>
+      </div>
 
+      {/* Formulaire */}
+      <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid gap-5 sm:grid-cols-2">
             <Select
@@ -134,7 +151,7 @@ export function AppointmentEdit() {
               value={formData.status ?? ''}
               onChange={handleChange}
             >
-              <option value="">Selectionner un statut</option>
+              <option value="">Sélectionner un statut</option>
               {STATUS_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
@@ -149,7 +166,7 @@ export function AppointmentEdit() {
               onChange={handleChange}
               required
             >
-              <option value="">Selectionner un commercial</option>
+              <option value="">Sélectionner un commercial</option>
               {commercials.map((c) => (
                 <option key={c.id} value={c.slug}>
                   {c.fullName}
@@ -158,15 +175,16 @@ export function AppointmentEdit() {
             </Select>
 
             <Input
-              label="Nom"
+              label="Médecin / Praticien"
               name="name"
+              placeholder="Dr. Dupont"
               value={formData.name ?? ''}
               onChange={handleChange}
             />
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-zinc-300">
-                Date & Heure
+              <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Date &amp; Heure
               </label>
               <div className="flex gap-3">
                 <input
@@ -174,7 +192,7 @@ export function AppointmentEdit() {
                   name="date"
                   value={formData.date ?? ''}
                   onChange={handleChange}
-                  className="input-base flex-1"
+                  className="block flex-1 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
                 />
                 <Select
                   name="time"
@@ -193,15 +211,17 @@ export function AppointmentEdit() {
             </div>
 
             <Input
-              label="Telephone (fixe)"
+              label="Téléphone (fixe)"
               name="phone_1"
+              placeholder="05 22 ..."
               value={formData.phone_1 ?? ''}
               onChange={handleChange}
             />
 
             <Input
-              label="Telephone (mobile)"
+              label="Téléphone (mobile)"
               name="phone_2"
+              placeholder="06 61 ..."
               value={formData.phone_2 ?? ''}
               onChange={handleChange}
             />
@@ -210,6 +230,7 @@ export function AppointmentEdit() {
               <Input
                 label="Adresse"
                 name="address"
+                placeholder="Casablanca, Maroc"
                 value={formData.address ?? ''}
                 onChange={handleChange}
               />
@@ -219,6 +240,7 @@ export function AppointmentEdit() {
               <Textarea
                 label="Commentaire"
                 name="comment"
+                placeholder="Notes sur le rendez-vous…"
                 value={formData.comment ?? ''}
                 onChange={handleChange}
                 rows={3}
@@ -226,14 +248,14 @@ export function AppointmentEdit() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3 border-t border-zinc-800 pt-6">
+          <div className="flex flex-wrap gap-3 border-t border-zinc-200 pt-5 dark:border-zinc-800">
             <Button type="submit" isLoading={updateMutation.isPending}>
               Enregistrer
             </Button>
             <Button
               type="button"
               variant="danger"
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               isLoading={deleteMutation.isPending}
             >
               Supprimer
@@ -244,6 +266,17 @@ export function AppointmentEdit() {
           </div>
         </form>
       </div>
+
+      {/* Modale de confirmation de suppression */}
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="Supprimer le rendez-vous"
+        message="Êtes-vous sûr de vouloir supprimer ce rendez-vous ? Cette action est irréversible."
+        confirmLabel="Supprimer"
+        variant="danger"
+      />
     </div>
   );
 }

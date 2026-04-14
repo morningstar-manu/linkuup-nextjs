@@ -139,8 +139,8 @@ export function AppointmentAdd({ onClose }: AppointmentAddProps) {
       </div>
 
       <Input
-        label="Nom complet"
-        placeholder="Nom du patient"
+        label="Médecin / Praticien"
+        placeholder="Dr. Dupont"
         error={errors.name?.message}
         {...register('name')}
       />
