@@ -144,9 +144,11 @@ export function AppointmentAllList() {
     });
   }, [docs, debouncedAgent, filterStatus]);
 
-  const sorted = [...filteredAppointments].sort(
-    (a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
-  );
+  const sorted = [...filteredAppointments].sort((a, b) => {
+    const aKey = `${a.date} ${a.time ?? ''}`;
+    const bKey = `${b.date} ${b.time ?? ''}`;
+    return bKey.localeCompare(aKey); // date RDV décroissant
+  });
 
   function openDrawer(apt: AppointmentDoc) {
     setSelectedAppointment(apt);
