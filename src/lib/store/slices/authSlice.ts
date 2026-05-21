@@ -16,6 +16,7 @@ export interface AuthState {
   roles: string[];
   isLogged: boolean;
   loading: boolean;
+  error: string | null;
 }
 
 const initialState: AuthState = {
@@ -23,6 +24,7 @@ const initialState: AuthState = {
   roles: [],
   isLogged: false,
   loading: false,
+  error: null,
 };
 
 const SESSION_KEY = 'authSession';
@@ -35,7 +37,7 @@ function loadFromStorage(): AuthState {
     if (!raw) return initialState;
     const { user, roles } = JSON.parse(raw) as { user: User; roles: string[] };
     if (!user) return initialState;
-    return { user, roles: roles ?? [], isLogged: true, loading: false };
+    return { user, roles: roles ?? [], isLogged: true, loading: false, error: null };
   } catch {
     return initialState;
   }
@@ -53,10 +55,10 @@ function clearSession(): void {
 // ─── Thunks ────────────────────────────────────────────────────────────────
 
 export const signin = createAsyncThunk<
-  void,
+  { user: User; roles: string[] },
   { email: string; password: string },
   { rejectValue: string }
->('auth/signin', async ({ email, password }, { dispatch, rejectWithValue }) => {
+>('auth/signin', async ({ email, password }, { rejectWithValue }) => {
   try {
     const { data } = await apiClient.post<{
       userlog: User;
@@ -65,7 +67,6 @@ export const signin = createAsyncThunk<
 
     const { userlog, roles } = data;
 
-    // Normaliser l'ID utilisateur (id ou _id selon la version de l'API)
     const rawId = userlog?.id ?? (userlog as { _id?: string })?._id;
     const user: User = {
       ...userlog,
@@ -73,7 +74,7 @@ export const signin = createAsyncThunk<
     };
 
     saveSession(user, roles);
-    dispatch(setAuth({ user, roles }));
+    return { user, roles };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Échec de l'authentification";
     return rejectWithValue(message);
@@ -86,12 +87,10 @@ export const logout = createAsyncThunk(
     const state = getState() as { auth: AuthState };
     const userId = state.auth.user?.id;
 
-    // Vider l'état Redux et le localStorage immédiatement
     dispatch(clearAuth());
     clearSession();
 
     try {
-      // Le serveur invalide le refreshToken en base et efface les cookies
       await apiClient.post('/auth/logout', { _id: userId });
     } catch {
       // Ignorer — la session est déjà effacée côté client
@@ -111,16 +110,36 @@ const authSlice = createSlice({
       state.user = action.payload.user;
       state.roles = action.payload.roles ?? [];
       state.isLogged = !!action.payload.user;
+      state.error = null;
     },
     clearAuth: (state) => {
       state.user = null;
       state.roles = [];
       state.isLogged = false;
+      state.error = null;
     },
     updateRoles: (state, action: { payload: string[] }) => {
       state.roles = action.payload;
       if (state.user) saveSession(state.user, action.payload);
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(signin.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(signin.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        state.user = action.payload.user;
+        state.roles = action.payload.roles;
+        state.isLogged = true;
+      })
+      .addCase(signin.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload ?? "Échec de l'authentification";
+      });
   },
 });
 

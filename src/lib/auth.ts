@@ -2,7 +2,6 @@ import jwt from 'jsonwebtoken';
 import { NextRequest } from 'next/server';
 import connectDB from './db';
 import User from './models/User';
-import Role from './models/Role';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const ADMIN_ROLES = ['admin', 'moderator'];
@@ -55,15 +54,10 @@ export async function requireAdmin(req: NextRequest): Promise<{ userId: string }
   const { userId } = await requireAuth(req);
   await connectDB();
 
-  const user = await User.findById(userId).exec();
+  const user = await User.findById(userId).populate('roles', 'name').exec();
   if (!user) throw new Error('Utilisateur introuvable');
 
-  const role = await Role.findOne({ name: 'admin' }).exec();
-  if (!role) throw new Error('Rôle admin introuvable');
-
-  const hasRole = user.roles.some(
-    (r: { toString: () => string }) => r.toString() === role._id.toString()
-  );
+  const hasRole = user.roles.some((r: { name: string }) => r.name === 'admin');
   if (!hasRole) throw new Error('Accès réservé aux administrateurs');
 
   return { userId };
@@ -73,14 +67,10 @@ export async function requireAdminOrModerator(req: NextRequest): Promise<{ userI
   const { userId } = await requireAuth(req);
   await connectDB();
 
-  const user = await User.findById(userId).exec();
+  const user = await User.findById(userId).populate('roles', 'name').exec();
   if (!user) throw new Error('Utilisateur introuvable');
 
-  const roles = await Role.find({ name: { $in: ADMIN_ROLES } }).exec();
-  const roleIds = roles.map((r) => r._id.toString());
-  const userRoleIds = user.roles.map((r: { toString: () => string }) => r.toString());
-  const hasRole = roleIds.some((id) => userRoleIds.includes(id));
-
+  const hasRole = user.roles.some((r: { name: string }) => ADMIN_ROLES.includes(r.name));
   if (!hasRole) throw new Error('Accès réservé aux administrateurs et modérateurs');
 
   return { userId };

@@ -23,10 +23,8 @@ export async function GET(req: NextRequest) {
 
     const query: Record<string, unknown> = {};
     if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      end.setDate(end.getDate() + 1);
-      query.createdAt = { $gte: start, $lt: end };
+      // date field is stored as "YYYY-MM-DD" string — string comparison works for ISO dates
+      query.date = { $gte: startDate.slice(0, 10), $lte: endDate.slice(0, 10) };
     }
 
     const result = await (Appointment as unknown as { paginate: (q: object, o: object) => Promise<unknown> }).paginate(query, {

@@ -3,8 +3,9 @@ import { z } from 'zod';
 import connectDB from '@/lib/db';
 import Appointment from '@/lib/models/Appointment';
 import User from '@/lib/models/User';
-import { requireAuth } from '@/lib/auth';
+import { requireAuth, requireAdminOrModerator } from '@/lib/auth';
 import { logActivity } from '@/lib/utils/activityLog';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 const createAppointmentSchema = z.object({
   date: z.string().min(1, 'Date requise').regex(/^\d{4}-\d{2}-\d{2}$/, 'Format de date invalide'),
@@ -21,11 +22,34 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
+  // Rate limiting: 60 créations / 15 min par IP
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const rl = checkRateLimit(`appt-create:${ip}`, { max: 60, windowMs: 15 * 60 * 1000 });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { success: false, message: 'Trop de requêtes. Réessayez dans quelques minutes.' },
+      { status: 429 }
+    );
+  }
+
   try {
     const { userId: actorId } = await requireAuth(req);
     await connectDB();
 
     const { userId } = await params;
+
+    // Un utilisateur ne peut créer des RDV que pour lui-même ; admin/modérateur peut créer pour n'importe qui
+    if (actorId !== userId) {
+      try {
+        await requireAdminOrModerator(req);
+      } catch {
+        return NextResponse.json(
+          { success: false, message: 'Vous ne pouvez créer des rendez-vous que pour votre propre compte.' },
+          { status: 403 }
+        );
+      }
+    }
+
     const user = await User.findById(userId);
     if (!user) {
       return NextResponse.json({ success: false, message: 'Utilisateur introuvable' }, { status: 404 });

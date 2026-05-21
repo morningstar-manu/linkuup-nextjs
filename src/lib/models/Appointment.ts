@@ -38,6 +38,8 @@ const appointmentSchema = new mongoose.Schema(
 appointmentSchema.index({ userId: 1, date: 1 });
 appointmentSchema.index({ date: 1 });
 appointmentSchema.index({ createdAt: -1 });
+appointmentSchema.index({ status: 1 });
+appointmentSchema.index({ commercial: 1, date: 1 });
 
 appointmentSchema.plugin(mongoosePaginate);
 
