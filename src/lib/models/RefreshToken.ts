@@ -2,13 +2,14 @@ import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
 const RefreshTokenSchema = new mongoose.Schema({
-  token: { type: String, required: true },
+  token: { type: String, required: true, index: true },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
+    index: true,
   },
-  expiryDate: { type: Date, required: true },
+  expiryDate: { type: Date, required: true, index: true },
 });
 
 RefreshTokenSchema.statics.createToken = async function (user: { _id: mongoose.Types.ObjectId }) {

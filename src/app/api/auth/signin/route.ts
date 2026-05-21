@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
     const INVALID_MSG = 'Identifiants invalides. Vérifiez votre email et mot de passe.';
 
     const user = await User.findOne({ email: email.toLowerCase().trim() })
+      .select('+password')
       .populate('roles', '-__v')
       .exec();
 
