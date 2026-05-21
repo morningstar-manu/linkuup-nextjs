@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
     const result = await (Appointment as unknown as { paginate: (q: object, o: object) => Promise<unknown> }).paginate(query, {
       page,
       limit,
+      sort: { date: -1, time: -1 },
       populate: { path: 'userId', select: 'firstName lastName' },
     });
 
