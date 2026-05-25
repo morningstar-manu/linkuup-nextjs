@@ -1,0 +1,48 @@
+name: Auto PR vers master
+
+on:
+  push:
+    branches:
+      - '**'
+      - '!master'
+
+jobs:
+  create-pr:
+    name: Créer la PR si elle n'existe pas
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Créer la PR vers master
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ github.ref_name }}"
+
+          # Vérifie si une PR ouverte existe déjà pour cette branche
+          EXISTING=$(gh pr list \
+            --head "$BRANCH" \
+            --base master \
+            --state open \
+            --json number \
+            --jq '.[0].number')
+
+          if [ -n "$EXISTING" ]; then
+            echo "PR #$EXISTING déjà ouverte pour $BRANCH — rien à faire."
+            exit 0
+          fi
+
+          # Titre = dernier message de commit
+          TITLE=$(git log -1 --pretty=%s)
+
+          gh pr create \
+            --base master \
+            --head "$BRANCH" \
+            --title "$TITLE" \
+            --body "PR créée automatiquement depuis la branche \`$BRANCH\`." \
+            --draft=false
