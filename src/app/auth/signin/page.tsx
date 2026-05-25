@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,6 +20,8 @@ type SignInForm = z.infer<typeof signInSchema>;
 
 export default function SignInPage() {
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const authError = useSelector((state: RootState) => state.alert.message);
 
   const {
@@ -32,7 +35,10 @@ export default function SignInPage() {
 
   const onSubmit = async (data: SignInForm) => {
     const result = await dispatch(signin(data));
-    if (signin.rejected.match(result)) {
+    if (signin.fulfilled.match(result)) {
+      const from = searchParams.get('from') ?? '/';
+      router.replace(from);
+    } else if (signin.rejected.match(result)) {
       const msg = (result.payload as string) ?? "Échec de l'authentification";
       setError('root', { message: msg });
     }

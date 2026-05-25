@@ -30,12 +30,12 @@ export async function GET(req: NextRequest) {
     const startDate = dayjs().year(year).isoWeek(weekNum).startOf('isoWeek');
     const endDate = dayjs().year(year).isoWeek(weekNum).endOf('isoWeek');
 
-    // Rendez-vous planifiés dans la semaine (champ date du RDV, pas createdAt)
-    const startStr = startDate.format('YYYY-MM-DD');
-    const endStr = endDate.format('YYYY-MM-DD');
-
+    // Rendez-vous saisis (créés) dans la semaine
     const appointments = await Appointment.find({
-      date: { $gte: startStr, $lte: endStr },
+      createdAt: {
+        $gte: startDate.toDate(),
+        $lte: endDate.toDate(),
+      },
     })
       .populate('userId', 'firstName lastName')
       .exec();
@@ -60,8 +60,10 @@ export async function GET(req: NextRequest) {
         byUser.set(uid, { name: fullName, week: Array(7).fill(0), total: 0 });
       }
 
-      // Grouper par jour de la semaine du rendez-vous planifié
-      const dayOfWeek = dayjs(apt.date as string).day();
+      // Grouper par jour de saisie (createdAt)
+      const dayOfWeek = dayjs(
+        (apt as { createdAt?: Date }).createdAt
+      ).day();
 
       const entry = byUser.get(uid)!;
       entry.week[dayOfWeek]++;

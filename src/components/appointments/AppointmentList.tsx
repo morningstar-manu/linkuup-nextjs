@@ -52,11 +52,9 @@ export function AppointmentList({ refreshTrigger }: AppointmentListProps) {
     enabled: mounted && !!userId,
   });
 
-  const allAppointments = [...(data?.appointments?.docs ?? [])].sort((a, b) => {
-    const aKey = `${a.date} ${a.time ?? ''}`;
-    const bKey = `${b.date} ${b.time ?? ''}`;
-    return bKey.localeCompare(aKey); // date RDV décroissant
-  });
+  const allAppointments = [...(data?.appointments?.docs ?? [])].sort(
+    (a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
+  );
 
   const filtered = statusFilter
     ? allAppointments.filter((a) => a.status === statusFilter)
