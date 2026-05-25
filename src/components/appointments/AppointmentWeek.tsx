@@ -291,7 +291,7 @@ export function AppointmentWeek() {
       </div>
 
       <p className="text-xs text-zinc-500">
-        * Les chiffres représentent les RDV <strong>saisis</strong> ce jour-là (date de création), pas la date du RDV planifié.
+        * Les chiffres représentent les RDV <strong>saisis</strong> ce jour-là (date de création).
       </p>
     </div>
   );

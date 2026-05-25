@@ -28,20 +28,16 @@ export async function GET(
 
     const query: Record<string, unknown> = { userId: targetUserId };
     if (date) {
-      // date param is "YYYY-MM"; appointment.date is "YYYY-MM-DD" string
-      const [year, month] = date.split('-');
-      const paddedMonth = month.padStart(2, '0');
-      const start = `${year}-${paddedMonth}-01`;
-      const nextMonth =
-        parseInt(paddedMonth, 10) === 12
-          ? `${parseInt(year, 10) + 1}-01-01`
-          : `${year}-${String(parseInt(paddedMonth, 10) + 1).padStart(2, '0')}-01`;
-      query.date = { $gte: start, $lt: nextMonth };
+      const [year, month] = date.split('-').map(Number);
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 1);
+      query.createdAt = { $gte: startDate, $lt: endDate };
     }
 
     const result = await (Appointment as unknown as { paginate: (q: object, o: object) => Promise<unknown> }).paginate(query, {
       page,
       limit,
+      sort: { createdAt: -1 },
     });
 
     return NextResponse.json({ appointments: result });
